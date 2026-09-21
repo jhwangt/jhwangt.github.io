@@ -17,14 +17,15 @@ The dashboard is a self-contained static HTML file. It uses embedded aggregate d
 - **AI use cases:** [OMB 2024 Federal AI Use Case Inventory](https://github.com/ombegov/2024-Federal-AI-Use-Case-Inventory). The file used in the analysis contains 1,757 inventory rows.
 - **Snapshot:** The dashboard was rebuilt from the research project in September 2026. It is not a live feed.
 
-Read [Methodology and limitations](METHODOLOGY.md) before using the figures in research or reporting. Counts of reported AI use cases are not counts of unique deployed AI systems or measures of effectiveness. Relationships shown in the charts are descriptive, not causal.
+Read [Methodology and limitations](METHODOLOGY.md) and the [data guide](DATA.md) before using the figures in research or reporting. Counts of reported AI use cases are not counts of unique deployed AI systems or measures of effectiveness. Relationships shown in the charts are descriptive, not causal.
 
 ## Files
 
 - `index.html`: interactive dashboard and the aggregate data it displays
 - `METHODOLOGY.md`: sources, calculations, scope, and limitations
+- `DATA.md`: source-file fingerprints, field definitions, joins, and validation totals
 
-The full dissertation working directory contains source downloads, intermediate analysis, and IRB materials. Those files are intentionally outside this public site package. The published dashboard is a fixed snapshot; rebuilding it from raw sources requires the separate research workflow.
+The full dissertation working directory contains source downloads, intermediate analysis, and IRB materials. Those files are intentionally outside this public site package. The published dashboard is a fixed snapshot; rebuilding it from raw sources requires the separate research workflow. The processing scripts and downloadable aggregate tables are not yet published in a separate research repository.
 
 ## Run locally
 
