@@ -5,6 +5,7 @@ Source for <https://jhwangt.github.io/>. The root `index.html` is the public hom
 ## Published projects
 
 - [Federal Workforce Dashboard](research/federal-workforce/index.html): interactive OPM employment and OMB AI inventory analysis. See its [methods and limitations](research/federal-workforce/METHODOLOGY.md).
+- [Federal Workforce Trends](research/federal-workforce-trends/index.html): three OPM employment snapshots with agency, bureau, occupation, and education comparisons. See its [methods and limitations](research/federal-workforce-trends/METHODOLOGY.md).
 
 ## Previous site
 

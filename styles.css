@@ -71,6 +71,11 @@ h3 { margin: 0; font-size: 28px; line-height: 1.2; }
 .project-meta dt { color: var(--muted); font-size: 13px; }
 .project-meta dd { margin: 0; font-size: 13px; font-weight: 650; }
 .project-links { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
+.related-tool { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-top: 38px; padding: 28px 0 0; border-top: 1px solid var(--line); }
+.related-tool > div:first-child { max-width: 700px; }
+.related-tool h3 { font-size: 24px; }
+.related-tool p:not(.project-type) { margin: 10px 0 0; color: var(--muted); }
+.related-tool .project-links { flex: 0 0 auto; }
 .primary-link { display: inline-block; padding: 11px 16px; border-radius: 4px; background: var(--teal); color: #ffffff; font-size: 14px; font-weight: 720; text-decoration: none; }
 .primary-link:hover { background: #105d58; }
 .secondary-link, .text-link { color: var(--teal); font-size: 14px; font-weight: 720; text-underline-offset: 5px; }
@@ -94,6 +99,7 @@ h3 { margin: 0; font-size: 28px; line-height: 1.2; }
   .featured-project, .coaching-layout, .about-layout { grid-template-columns: 1fr; gap: 26px; }
   .section { padding-block: 58px; }
   .project-copy { max-width: 620px; }
+  .related-tool { align-items: flex-start; flex-direction: column; }
 }
 
 @media (max-width: 520px) {

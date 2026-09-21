@@ -1,0 +1,39 @@
+# Workforce trends: research design notes
+
+## What this dashboard answers
+
+The [dashboard](index.html) compares three OPM EHRI Status snapshots: September 2025, February 2026, and July 2026. Its selector offers all available agencies, all 24 CFO Act agency groupings, other agencies, and individual agencies. Once an individual agency is selected, a second selector and table show its OPM agency subelements (bureau-level records). It supports total employees, seven selected occupational series (count and share), and selected education levels (count and share) at the selected scope. Education levels can be combined with checkboxes. The "Bachelor's or higher" preset selects bachelor's, master's/professional, and doctorate; the "Above college: graduate degrees" preset selects master's/professional and doctorate. "No data reported" is a separate optional category. The agency and bureau tables show all three observations and the change between the first and last snapshots. The middle observation is a checkpoint, not evidence of a continuous trajectory. All line-chart y-axes start at zero.
+
+Useful dissertation questions include:
+
+1. Which agencies experienced the largest absolute and proportional workforce changes during the observed period?
+2. Did the selected technical series change at the same rate as total employment within each agency?
+3. Did the distribution of selected technical capacity across agencies become more concentrated?
+4. How sensitive are these findings to the occupational-series definition, especially inclusion of broad 2210 IT management and 0601 health science?
+5. Do agency changes coincide with differences in reported AI use cases? This is exploratory because the AI inventory is a different reporting period and counts reported use cases, not deployed systems or staff.
+
+## Definitions and cautions
+
+- Each OPM file is read as pipe-delimited text. `count` is summed; the build does not rely on row count as a general rule, even though each of these files currently sums to its row count.
+- Agency names follow the existing project's OPM-to-dashboard mapping. The Department of Defense components are grouped together. CFPB is separated from the Federal Reserve System and FERC from the Department of Energy, avoiding overlap in totals.
+- Bureau-level records group OPM `agency_subelement` under its original component agency and mapped dashboard agency. An OPM subelement may represent an entire agency or a reporting unit rather than a conventional bureau; the dashboard retains the source label. The original component distinguishes similarly named subelements under Department of Defense components. A subelement absent from a snapshot is shown as missing, not zero. Bureau employee counts sum exactly to agency counts in each file: 523 subelement groupings in September 2025 and 516 in each 2026 snapshot.
+- CFO Act membership uses the OPM extract's `cfo_act_agency_indicator` field. FERC is shown with other agencies because this dashboard separates it from the Department of Energy. There are 24 CFO Act groupings in each local snapshot. "Other agencies" includes all remaining OPM groupings present in each file (104 in September 2025; 102 in February and July 2026), which is broader than only the independent agencies represented in the 2024 AI inventory.
+- The selected series are 0601, 1510, 1515, 1529, 1530, 1560, and 2210. This is an analyst-defined proxy, **not an official AI workforce classification**. Series 2210 is broad IT management.
+- Education counts come from OPM's `education_level_bracket` field. Multiple selected categories are summed once per employee; the share denominator is the entire workforce in the selected agency or group. Education categories sum to the employee total in each of the three local files. Selecting all reported levels excludes the separate "No data reported" category.
+- OPM's raw agency label `DFC` is displayed as [U.S. International Development Finance Corporation](https://www.dfc.gov/who-we-are/about-us).
+- The dashboard totals all agency groupings present in each file. A changing set of agencies can affect the total. For agency comparisons, a missing period is shown as missing, never zero.
+- OPM describes EHRI Status as a month-end snapshot and notes exclusions, delayed submissions, and data quality checks. Consult [OPM data sources](https://data.opm.gov/resources/data-sources) and the [download page](https://data.opm.gov/get-data/data-downloads) before drawing substantive conclusions.
+- Trends are descriptive. They do not establish that AI adoption caused staffing changes or that workforce changes caused AI adoption.
+
+## Rebuild and provenance
+
+Run `python3 scripts/build_workforce_trends.py` from this directory. The script reads only the three named local employment files, streams them into agency aggregates, embeds those aggregates in `workforce_trends.html`, and records the input filenames, SHA-256 hashes, row counts, and employee totals in `data/processed/workforce_trends_metadata.json`. Raw files stay outside the dashboard HTML.
+
+The dashboard currently shows 2,190,219 employees in September 2025, 2,028,138 in February 2026, and 2,020,230 in July 2026 across all agency groupings present in each respective file. The selected-series totals are 125,868, 113,174, and 112,543. These are as extracted from the three local files; check OPM's release-specific quality notes before citing the differences as changes in the entire federal workforce.
+
+## Next data additions worth prioritizing
+
+1. Add a matched-agency panel that holds the agency set fixed across periods and flags name or coverage changes.
+2. Add OPM Dynamics hiring and separation data if the thesis needs flows rather than status counts. A fall in a status count alone cannot distinguish retirements, other separations, hiring slowdowns, or organizational reclassification.
+3. Add age and retirement-eligibility analysis only after validating the available OPM fields and the cohort definitions.
+4. Add the newest OMB AI inventory as a separate, versioned data source if longitudinal AI reporting is central to the thesis. Do not interpret different inventory vintages as a clean adoption time series without assessing reporting changes.
