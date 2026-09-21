@@ -1,12 +1,110 @@
-body { font-family: Arial, sans-serif; }
-.menu { background-color: #333; overflow: hidden; }
-.menu a {
-    float: left;
-    display: block;
-    color: white;
-    text-align: center;
-    padding: 14px 20px;
-    text-decoration: none;
+:root {
+  color-scheme: light;
+  --ink: #17242a;
+  --muted: #516168;
+  --line: #ccd5d5;
+  --paper: #ffffff;
+  --wash: #f2f7f5;
+  --teal: #16766f;
+  --accent: #dd785d;
 }
-.menu a:hover { background-color: #ddd; color: black; }
-.content { padding: 20px; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font: 16px/1.6 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+}
+a { color: inherit; }
+img { display: block; max-width: 100%; }
+.shell { width: min(100% - 40px, 1180px); margin-inline: auto; }
+
+.site-header { background: var(--paper); border-bottom: 1px solid var(--line); }
+.header-inner { min-height: 70px; display: flex; align-items: center; gap: 32px; }
+.brand { font-size: 20px; font-weight: 760; text-decoration: none; white-space: nowrap; }
+.brand-mark { color: var(--accent); }
+.site-header nav { display: flex; gap: 28px; margin-left: auto; }
+.site-header nav a, .profile-link { font-size: 14px; font-weight: 640; text-decoration: none; }
+.site-header nav a:hover, .profile-link:hover, .text-link:hover { color: var(--teal); }
+.profile-link { border-left: 1px solid var(--line); padding-left: 26px; }
+
+.hero {
+  position: relative;
+  min-height: 430px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  color: #ffffff;
+  background: #12303a url("assets/federal-workforce-preview.png") center 35% / cover no-repeat;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(12, 34, 42, .96) 0%, rgba(12, 34, 42, .90) 42%, rgba(12, 34, 42, .60) 75%, rgba(12, 34, 42, .40) 100%);
+}
+.hero-content { position: relative; padding-block: 58px 62px; }
+.eyebrow { margin: 0 0 15px; color: var(--teal); font-size: 12px; font-weight: 780; text-transform: uppercase; }
+.hero .eyebrow { color: #84d3c5; }
+h1, h2, h3, p { letter-spacing: 0; }
+h1 { margin: 0; font-size: clamp(52px, 7vw, 92px); line-height: 1.05; font-weight: 760; }
+h2 { margin: 0; font-size: clamp(28px, 3.2vw, 43px); line-height: 1.17; font-weight: 730; }
+h3 { margin: 0; font-size: 28px; line-height: 1.2; }
+.hero-summary { max-width: 570px; margin: 22px 0 26px; font-size: clamp(18px, 2vw, 22px); line-height: 1.5; }
+.hero-action { display: inline-block; color: #ffffff; font-size: 15px; font-weight: 730; text-underline-offset: 6px; }
+.hero-action span { margin-left: 8px; }
+
+.section { padding-block: 80px; scroll-margin-top: 24px; }
+.section-heading { max-width: 790px; margin-bottom: 34px; }
+.section-heading > p:last-child { margin: 17px 0 0; color: var(--muted); font-size: 18px; }
+.featured-project { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(290px, .75fr); gap: 54px; align-items: center; }
+.project-image { overflow: hidden; border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 12px 30px rgba(21, 43, 48, .10); }
+.project-image img { width: 100%; height: auto; }
+.project-image:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+.project-type { margin: 0 0 12px; color: var(--teal); font-size: 12px; font-weight: 780; text-transform: uppercase; }
+.project-copy > p:not(.project-type) { color: var(--muted); font-size: 17px; }
+.project-meta { display: grid; gap: 0; margin: 24px 0 28px; border-top: 1px solid var(--line); }
+.project-meta div { display: grid; grid-template-columns: 105px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.project-meta dt { color: var(--muted); font-size: 13px; }
+.project-meta dd { margin: 0; font-size: 13px; font-weight: 650; }
+.project-links { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
+.primary-link { display: inline-block; padding: 11px 16px; border-radius: 4px; background: var(--teal); color: #ffffff; font-size: 14px; font-weight: 720; text-decoration: none; }
+.primary-link:hover { background: #105d58; }
+.secondary-link, .text-link { color: var(--teal); font-size: 14px; font-weight: 720; text-underline-offset: 5px; }
+
+.coaching-section { background: var(--wash); border-block: 1px solid #e0e9e6; }
+.coaching-layout, .about-layout { display: grid; grid-template-columns: minmax(240px, .8fr) minmax(0, 1fr); gap: 100px; }
+.coaching-copy p, .about-layout p { margin: 0; max-width: 620px; font-size: 19px; line-height: 1.7; }
+.coaching-copy .quiet { margin-top: 20px; color: var(--muted); font-size: 15px; }
+.about-layout .text-link { display: inline-block; margin-top: 25px; }
+.site-footer { border-top: 1px solid var(--line); }
+.footer-inner { min-height: 84px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 32px; color: var(--muted); font-size: 13px; }
+.footer-inner span:first-child { color: var(--ink); font-weight: 740; }
+.footer-inner a { text-decoration: none; }
+
+@media (max-width: 800px) {
+  .header-inner { flex-wrap: wrap; gap: 8px 20px; padding-block: 13px; }
+  .site-header nav { order: 3; width: 100%; margin: 0; gap: 20px; overflow-x: auto; white-space: nowrap; }
+  .profile-link { margin-left: auto; }
+  .hero { min-height: 420px; }
+  .hero::before { background: rgba(12, 34, 42, .84); }
+  .featured-project, .coaching-layout, .about-layout { grid-template-columns: 1fr; gap: 26px; }
+  .section { padding-block: 58px; }
+  .project-copy { max-width: 620px; }
+}
+
+@media (max-width: 520px) {
+  .shell { width: min(100% - 32px, 1180px); }
+  .site-header nav { gap: 17px; }
+  .site-header nav a, .profile-link { font-size: 12px; }
+  .profile-link { border: 0; padding: 0; }
+  .hero { min-height: 400px; }
+  .hero-content { padding-block: 48px; }
+  .hero-summary { max-width: 420px; }
+  .project-meta div { grid-template-columns: 90px 1fr; }
+  .coaching-copy p, .about-layout p { font-size: 17px; }
+  .footer-inner { padding-block: 22px; }
+}
