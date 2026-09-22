@@ -34,10 +34,12 @@ function refreshCompareOptions() {
   const agency = $('agency').value, query = $('compare-search').value.trim().toLowerCase();
   if (agency && agency !== '__cfo__' && agency !== '__other__' && !compareInitialized) {
     compareInitialized = true;
-    agencyBureaus(agency).sort((a, b) =>
-      (bureauLookup.get(b.id + '|' + lastPeriod)?.employees || 0) -
-      (bureauLookup.get(a.id + '|' + lastPeriod)?.employees || 0)).slice(0, 2)
-      .forEach(row => compareIds.add(row.id));
+    if (!compareIds.size) {
+      agencyBureaus(agency).sort((a, b) =>
+        (bureauLookup.get(b.id + '|' + lastPeriod)?.employees || 0) -
+        (bureauLookup.get(a.id + '|' + lastPeriod)?.employees || 0)).slice(0, 2)
+        .forEach(row => compareIds.add(row.id));
+    }
   }
   const bureaus = [...bureauById.values()].filter(row =>
     (!agency || (agency === '__cfo__' ? groupOf[row.agency] === 'CFO Act' :
@@ -78,17 +80,21 @@ const educationShare = row => row && row.employees ?
   100 * educationCount(row) / row.employees : null;
 
 const lookup = new Map(DATA.records.map(row => [row.agency + '|' + row.period, row]));
+const matchedNames = new Set(names.filter(name => DATA.periods.every(period => lookup.has(name + '|' + period))));
+const matchedMode = scope => $('matched').checked && (!scope || scope === '__cfo__' || scope === '__other__');
 function inScope(row, scope) {
   return !scope || (scope === '__cfo__' ? row.group === 'CFO Act' :
     scope === '__other__' ? row.group === 'Other agency' : row.agency === scope);
 }
 function total(period, scope) {
-  const rows = DATA.records.filter(row => row.period === period && inScope(row, scope));
+  const rows = DATA.records.filter(row => row.period === period && inScope(row, scope) &&
+    (!matchedMode(scope) || matchedNames.has(row.agency)));
   const sumByKey = (field, keys) => Object.fromEntries(keys.map(key =>
     [key, rows.reduce((sum, row) => sum + (row[field][key] || 0), 0)]));
   return {
     employees: rows.reduce((sum, row) => sum + row.employees, 0),
     selected: rows.reduce((sum, row) => sum + row.selected, 0),
+    agencyCount: rows.length,
     series: sumByKey('series', Object.keys(DATA.series_labels)),
     education: sumByKey('education', educationKeys)
   };
@@ -134,13 +140,16 @@ function renderTrend(values, measure) {
     if (coords[i]) {
       const [x, yy] = coords[i], display = isPercent(measure) ? pct(values[i]) : fmt(values[i]);
       svg += `<circle class="point" cx="${x}" cy="${yy}" r="6"><title>${DATA.periods[i]}: ${display}</title></circle>`;
-      svg += `<text class="axis" x="${x}" y="${yy - 13}" text-anchor="middle">${display}</text>`;
+      if (i === 0 || i === DATA.periods.length - 1) {
+        svg += `<text class="axis" x="${x}" y="${yy - 13}" text-anchor="middle">${display}</text>`;
+      }
     }
   }
   $('trend').innerHTML = svg;
 }
 function renderCompare(scope, measure) {
   const selected = [...compareIds].map(id => bureauById.get(id)).filter(Boolean);
+  $('compare-trend').hidden = !selected.length;
   $('compare-caption').textContent = `${selected.length} OPM subelement${selected.length === 1 ? '' : 's'} selected. The chart uses ${measureLabel(measure)} and the same education choices as the main chart. You can compare bureaus from different agencies.`;
   $('compare-legend').innerHTML = selected.map((row, i) => `<span><i class="compare-swatch" style="background:${compareColors[i]}"></i>${escapeHtml(compareLabel(row))}<button type="button" data-remove-bureau="${row.id}" aria-label="Remove ${escapeHtml(compareLabel(row))} from comparison">×</button></span>`).join('');
   $('compare-header').innerHTML = selected.length ? '<th>OPM subelement</th>' +
@@ -188,16 +197,18 @@ function renderCompare(scope, measure) {
   }).join('');
 }
 function renderSeries(row) {
+  if (!row) {
+    $('series').innerHTML = `<p class="chart-note">No ${periodLabel(lastPeriod)} employment observation for this scope.</p>`;
+    return;
+  }
   const counts = row?.series || {};
   const entries = Object.entries(DATA.series_labels).map(([key, name]) =>
     [name, counts[key] || 0]).sort((a, b) => b[1] - a[1]);
   const top = Math.max(1, ...entries.map(entry => entry[1]));
   $('series').innerHTML = entries.map(([name, count]) => `
-    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin:8px 0">
-      <span>${escapeHtml(name)}</span><b>${fmt(count)}</b>
-      <div style="grid-column:1/-1;background:#e6eef1;height:9px;border-radius:5px">
-        <div class="bar" style="width:${100 * count / top}%;height:9px;border-radius:5px"></div>
-      </div>
+    <div class="composition-row">
+      <div class="composition-row-head"><span>${escapeHtml(name)}</span><strong>${fmt(count)} · ${row?.employees ? pct(100 * count / row.employees) : '—'}</strong></div>
+      <div class="bar-track"><div class="bar" style="width:${100 * count / top}%"></div></div>
     </div>`).join('');
 }
 function renderEducation(row) {
@@ -209,25 +220,45 @@ function renderEducation(row) {
   $('education-summary').textContent = `Education levels · ${chosen.length} selected`;
   $('education-breakdown').innerHTML = educationKeys.map(key => {
     const count = counts[key] || 0, width = row?.employees ? 100 * count / row.employees : 0;
-    return `<div style="display:grid;grid-template-columns:minmax(160px,1fr) auto auto;gap:10px;margin:9px 0;align-items:center;${chosen.includes(key) ? 'font-weight:700' : ''}">
-      <span>${escapeHtml(DATA.education_labels[key])}</span><span>${fmt(count)}</span><span>${row?.employees ? pct(width) : '—'}</span>
-      <div style="grid-column:1/-1;background:#e6eef1;height:9px;border-radius:5px"><div class="bar-secondary" style="width:${width}%;height:9px;border-radius:5px"></div></div>
+    return `<div class="composition-row"${chosen.includes(key) ? ' style="font-weight:600"' : ''}>
+      <div class="composition-row-head"><span>${escapeHtml(DATA.education_labels[key])}</span><strong>${fmt(count)} · ${row?.employees ? pct(width) : '—'}</strong></div>
+      <div class="bar-track"><div class="bar-secondary" style="width:${width}%"></div></div>
     </div>`;
   }).join('');
+}
+function renderRanking(scope, measure) {
+  const candidates = names.filter(name => !scope ||
+    (scope === '__cfo__' ? groupOf[name] === 'CFO Act' :
+      scope === '__other__' ? groupOf[name] === 'Other agency' : name === scope));
+  const rows = candidates.filter(name => !matchedMode(scope) || matchedNames.has(name)).map(name => {
+    const first = value(lookup.get(name + '|' + firstPeriod), measure);
+    const last = value(lookup.get(name + '|' + lastPeriod), measure);
+    return {name, difference: first != null && last != null ? last - first : null};
+  }).filter(row => row.difference != null).sort((a, b) =>
+    Math.abs(b.difference) - Math.abs(a.difference)).slice(0, 10);
+  const max = Math.max(1, ...rows.map(row => Math.abs(row.difference)));
+  $('ranking-caption').textContent = `Largest changes in ${measureLabel(measure)} from ${rangeLabel}. ${matchedMode(scope) ? 'Only agencies present in all six snapshots are included.' : 'Agencies missing either endpoint are excluded.'}`;
+  $('agency-ranking').innerHTML = rows.length ? rows.map(row => {
+    const width = 50 * Math.abs(row.difference) / max;
+    const left = row.difference < 0 ? 50 - width : 50;
+    const display = (row.difference > 0 ? '+' : '') +
+      (isPercent(measure) ? row.difference.toFixed(2) + ' pp' : fmt(row.difference));
+    return `<div class="ranking-row"><button type="button" data-agency="${escapeHtml(row.name)}">${escapeHtml(row.name)}</button><div class="ranking-track"><div class="ranking-bar${row.difference < 0 ? ' negative-bar' : ''}" style="left:${left}%;width:${Math.max(width, .3)}%"></div></div><span class="ranking-value">${display}</span></div>`;
+  }).join('') : '<p class="chart-note">No agencies have both endpoint observations in this scope.</p>';
 }
 function renderTable(scope) {
   $('agency-header').innerHTML = '<th>Agency</th>' + DATA.periods.map(period => `<th>${periodLabel(period)}</th>`).join('') +
     `<th>Change<br>${periodLabel(firstPeriod)}–${periodLabel(lastPeriod)}</th><th>Selected series share<br>${periodLabel(lastPeriod)}</th><th>Selected education share<br>${periodLabel(lastPeriod)}</th>`;
-  const tableNames = names.filter(name => !scope ||
+  const tableNames = names.filter(name => (!matchedMode(scope) || matchedNames.has(name)) && (!scope ||
     (scope === '__cfo__' ? groupOf[name] === 'CFO Act' :
-      scope === '__other__' ? groupOf[name] === 'Other agency' : name === scope));
+      scope === '__other__' ? groupOf[name] === 'Other agency' : name === scope)));
   const rows = tableNames.map(name => {
     const observations = DATA.periods.map(period => lookup.get(name + '|' + period));
     const start = observations[0], end = observations[observations.length - 1];
     return {name, observations, end, change: start && end ? end.employees - start.employees : null};
   }).sort((a, b) => (b.end?.employees || 0) - (a.end?.employees || 0));
   $('rows').innerHTML = rows.map(row => `<tr>
-    <td>${escapeHtml(row.name)}</td>${row.observations.map(item => `<td>${fmt(item?.employees)}</td>`).join('')}
+    <td><button type="button" data-agency="${escapeHtml(row.name)}">${escapeHtml(row.name)}</button></td>${row.observations.map(item => `<td>${fmt(item?.employees)}</td>`).join('')}
     <td>${row.change == null ? '—' : (row.change > 0 ? '+' : '') + fmt(row.change)}</td>
     <td>${row.end?.employees ? pct(100 * row.end.selected / row.end.employees) : '—'}</td>
     <td>${pct(educationShare(row.end))}</td>
@@ -260,6 +291,13 @@ function render() {
   const scope = $('agency').value || null, bureauId = $('bureau').value || null;
   const measure = $('measure').value;
   const groupScope = scope === '__cfo__' || scope === '__other__';
+  $('matched').disabled = Boolean(scope && !groupScope);
+  const matchedCount = names.filter(name => matchedNames.has(name) &&
+    (!scope || (scope === '__cfo__' ? groupOf[name] === 'CFO Act' :
+      scope === '__other__' ? groupOf[name] === 'Other agency' : name === scope))).length;
+  $('matched-note').textContent = $('matched').disabled ?
+    'Fixed-agency totals apply to all-agency and agency-group views.' :
+    `When selected, totals and rankings use ${matchedCount} agencies present in all six snapshots.`;
   const points = DATA.periods.map(period => bureauId ? bureauLookup.get(bureauId + '|' + period) :
     !scope || groupScope ? total(period, scope) : lookup.get(scope + '|' + period));
   const values = points.map(row => value(row, measure));
@@ -273,9 +311,10 @@ function render() {
   $('coverage-note').textContent = periodLabel(lastPeriod);
   $('series-title').textContent = `Occupational series · ${periodLabel(lastPeriod)}`;
   $('education-title').textContent = `Education breakdown · ${periodLabel(lastPeriod)}`;
-  $('agency-table-caption').textContent = `Agency employee counts across ${DATA.periods.length} snapshots. A missing observation (—) means that grouping is absent from that file, not zero. Change compares the first and latest observations only when both exist.`;
-  $('notice').textContent = scope ? 'Selected scope: ' + selectedName :
-    'Totals cover every agency grouping present in each file; coverage can change between snapshots.';
+  $('agency-table-caption').textContent = `Agency employee counts across ${DATA.periods.length} snapshots. A missing observation (—) means the grouping is absent from that file. ${matchedMode(scope) ? 'The agency set is held constant across all six dates.' : 'Change compares endpoints only when both observations exist.'}`;
+  $('notice').textContent = matchedMode(scope) ?
+    `${selectedName} · the same ${matchedCount} agencies are included at every date.` :
+    `${selectedName} · coverage can change between snapshots. Review source notes before interpreting differences.`;
   $('start').textContent = isPercent(measure) ? pct(first) : fmt(first);
   $('end').textContent = isPercent(measure) ? pct(last) : fmt(last);
   $('start-note').textContent = measureLabel(measure);
@@ -290,13 +329,19 @@ function render() {
   $('coverage-label').textContent = individual ? 'Bureaus represented' : 'Agencies represented';
   $('coverage').textContent = individual ? DATA.bureaus.filter(row =>
     row.period === lastPeriod && row.agency === scope && (!bureauId || row.id === bureauId)).length :
-    DATA.records.filter(row => row.period === lastPeriod && inScope(row, scope)).length;
+    DATA.records.filter(row => row.period === lastPeriod && inScope(row, scope) &&
+      (!matchedMode(scope) || matchedNames.has(row.agency))).length;
   $('trend-summary').textContent = difference == null ?
     `No complete ${rangeLabel} comparison for this scope.` :
     difference > 0 ? `Increase from ${rangeLabel}.` :
       difference < 0 ? `Decrease from ${rangeLabel}.` :
         `No change from ${rangeLabel}.`;
   renderTrend(values, measure);
+  $('observations-value-heading').textContent = measureLabel(measure);
+  $('observation-rows').innerHTML = DATA.periods.map((period, index) =>
+    `<tr><td>${periodLabel(period)}</td><td>${isPercent(measure) ? pct(values[index]) : fmt(values[index])}</td><td>${points[index]?.agencyCount ?? (points[index] ? 1 : 0)}</td></tr>`).join('');
+  renderRanking(scope, measure);
+  if (bureauId) $('ranking-caption').textContent += ' Rankings remain at agency level.';
   renderCompare(scope, measure);
   renderSeries(points[points.length - 1]);
   renderEducation(points[points.length - 1]);
@@ -307,6 +352,7 @@ function render() {
 $('agency').addEventListener('change', () => { refreshBureauOptions(); refreshCompareOptions(); render(); });
 $('bureau').addEventListener('change', render);
 $('measure').addEventListener('change', render);
+$('matched').addEventListener('change', render);
 $('compare-search').addEventListener('input', refreshCompareOptions);
 $('compare-legend').addEventListener('click', event => {
   const id = event.target?.dataset?.removeBureau;
@@ -344,6 +390,43 @@ document.querySelectorAll('[data-education-preset]').forEach(button => {
     render();
   });
 });
+const tabNames = ['overview', 'agencies', 'bureaus', 'composition'];
+function activateTab(name, updateUrl = true) {
+  if (!tabNames.includes(name)) name = 'overview';
+  tabNames.forEach(tabName => {
+    const active = tabName === name;
+    $('tab-' + tabName).setAttribute('aria-selected', String(active));
+    $('tab-' + tabName).tabIndex = active ? 0 : -1;
+    $('panel-' + tabName).hidden = !active;
+  });
+  if (updateUrl && typeof history !== 'undefined') history.replaceState(null, '', '#' + name);
+}
+tabNames.forEach(name => {
+  const tab = $('tab-' + name);
+  tab.addEventListener('click', () => activateTab(name));
+  tab.addEventListener('keydown', event => {
+    const index = tabNames.indexOf(name);
+    const next = event.key === 'ArrowRight' ? tabNames[(index + 1) % tabNames.length] :
+      event.key === 'ArrowLeft' ? tabNames[(index - 1 + tabNames.length) % tabNames.length] :
+      event.key === 'Home' ? tabNames[0] : event.key === 'End' ? tabNames[tabNames.length - 1] : null;
+    if (!next) return;
+    event.preventDefault();
+    activateTab(next);
+    $('tab-' + next).focus();
+  });
+});
+function selectAgencyFromList(event) {
+  const agency = event.target?.dataset?.agency;
+  if (!agency) return;
+  $('agency').value = agency;
+  refreshBureauOptions();
+  refreshCompareOptions();
+  render();
+  activateTab('overview');
+}
+$('agency-ranking').addEventListener('click', selectAgencyFromList);
+$('rows').addEventListener('click', selectAgencyFromList);
 refreshBureauOptions();
 refreshCompareOptions();
 render();
+activateTab(typeof location !== 'undefined' ? location.hash.slice(1) : 'overview', false);

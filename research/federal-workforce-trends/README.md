@@ -1,6 +1,6 @@
 # Federal Workforce Trends
 
-[Open the dashboard](index.html) to compare six OPM employment snapshots from September 2022 through July 2026. Choose an agency and, where available, an OPM agency subelement. The bureau comparison panel can plot up to four individually selected subelements, including ones from different agencies. Compare employee counts, selected occupational series, and combinations of education levels.
+[Open the dashboard](index.html) to compare six OPM employment snapshots from September 2022 through July 2026. Version 2 organizes the analysis into Overview, Agencies, Bureaus, and Composition tabs. Agency and measure choices carry across tabs. The bureau comparison can plot up to four subelements, including ones from different agencies. A fixed-agency option holds the set of agency groupings constant across all six snapshots.
 
 This static page embeds aggregate counts. Read the [methods and limitations](METHODOLOGY.md), [source fingerprints](DATA.md), and [build guide](BUILD.md) before citing numbers.
 
