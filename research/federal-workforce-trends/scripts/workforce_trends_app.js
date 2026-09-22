@@ -1,6 +1,9 @@
 const $ = id => document.getElementById(id);
 const fmt = value => value == null ? '—' : Math.round(value).toLocaleString();
 const pct = value => value == null ? '—' : value.toFixed(2) + '%';
+const periodLabel = period => new Intl.DateTimeFormat('en-US', {month: 'short', year: 'numeric', timeZone: 'UTC'}).format(new Date(period + '-01T00:00:00Z'));
+const firstPeriod = DATA.periods[0], lastPeriod = DATA.periods[DATA.periods.length - 1];
+const rangeLabel = `${periodLabel(firstPeriod)} to ${periodLabel(lastPeriod)}`;
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 })[char]);
@@ -13,7 +16,7 @@ const options = values => values.map(name =>
   `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
 $('agency').innerHTML = `
   <option value="">All available agencies</option>
-  <option value="__cfo__">CFO Act agencies (24)</option>
+  <option value="__cfo__">CFO Act agencies</option>
   <option value="__other__">Other agencies</option>
   <optgroup label="CFO Act agencies">${options(cfoNames)}</optgroup>
   <optgroup label="Other agencies">${options(otherNames)}</optgroup>`;
@@ -80,27 +83,30 @@ const measureLabel = measure => ({
   educationShare: 'selected education share'
 })[measure];
 function scopeLabel(scope) {
-  return scope === '__cfo__' ? 'CFO Act agencies (24)' :
+  return scope === '__cfo__' ? 'CFO Act agencies' :
     scope === '__other__' ? 'Other agencies' : scope || 'All available agencies';
 }
 function renderTrend(values, measure) {
   const present = values.filter(value => value != null);
   const high = Math.max(1, ...present) * 1.1;
   const y = value => 265 - value / high * 220;
-  const coords = values.map((value, index) => value == null ? null : [120 + index * 250, y(value)]);
+  const dates = DATA.periods.map(period => Date.parse(period + '-01T00:00:00Z'));
+  const span = dates[dates.length - 1] - dates[0];
+  const x = index => span ? 120 + 580 * (dates[index] - dates[0]) / span : 410;
+  const coords = values.map((value, index) => value == null ? null : [x(index), y(value)]);
   let svg = '';
   for (let i = 0; i <= 4; i++) {
     const tick = high * i / 4, yy = y(tick);
-    svg += `<line x1="95" y1="${yy}" x2="650" y2="${yy}" stroke="#dce5e9"/>`;
+    svg += `<line x1="95" y1="${yy}" x2="710" y2="${yy}" stroke="#dce5e9"/>`;
     svg += `<text class="axis" x="88" y="${yy + 4}" text-anchor="end">${isPercent(measure) ? pct(tick) : fmt(tick)}</text>`;
   }
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < coords.length - 1; i++) {
     if (coords[i] && coords[i + 1]) {
       svg += `<line class="line" x1="${coords[i][0]}" y1="${coords[i][1]}" x2="${coords[i + 1][0]}" y2="${coords[i + 1][1]}"/>`;
     }
   }
-  for (let i = 0; i < 3; i++) {
-    svg += `<text class="axis" x="${120 + i * 250}" y="295" text-anchor="middle">${DATA.periods[i]}</text>`;
+  for (let i = 0; i < DATA.periods.length; i++) {
+    svg += `<text class="axis" x="${x(i)}" y="295" text-anchor="end" transform="rotate(-35 ${x(i)} 295)">${periodLabel(DATA.periods[i])}</text>`;
     if (coords[i]) {
       const [x, yy] = coords[i], display = isPercent(measure) ? pct(values[i]) : fmt(values[i]);
       svg += `<circle class="point" cx="${x}" cy="${yy}" r="6"><title>${DATA.periods[i]}: ${display}</title></circle>`;
@@ -127,7 +133,7 @@ function renderEducation(row) {
   const selectedCount = educationCount(row), share = educationShare(row);
   $('education-caption').textContent = row?.employees ?
     `${fmt(selectedCount)} employees (${pct(share)}) across ${chosen.length} selected level${chosen.length === 1 ? '' : 's'}. Shares use all employees in this scope as the denominator.` :
-    'No July 2026 employment record for this scope.';
+    `No ${periodLabel(lastPeriod)} employment record for this scope.`;
   $('education-summary').textContent = `Education levels · ${chosen.length} selected`;
   $('education-breakdown').innerHTML = educationKeys.map(key => {
     const count = counts[key] || 0, width = row?.employees ? 100 * count / row.employees : 0;
@@ -138,23 +144,26 @@ function renderEducation(row) {
   }).join('');
 }
 function renderTable(scope) {
+  $('agency-header').innerHTML = '<th>Agency</th>' + DATA.periods.map(period => `<th>${periodLabel(period)}</th>`).join('') +
+    `<th>Change<br>${periodLabel(firstPeriod)}–${periodLabel(lastPeriod)}</th><th>Selected series share<br>${periodLabel(lastPeriod)}</th><th>Selected education share<br>${periodLabel(lastPeriod)}</th>`;
   const tableNames = names.filter(name => !scope ||
     (scope === '__cfo__' ? groupOf[name] === 'CFO Act' :
       scope === '__other__' ? groupOf[name] === 'Other agency' : name === scope));
   const rows = tableNames.map(name => {
-    const start = lookup.get(name + '|2025-09'), middle = lookup.get(name + '|2026-02');
-    const end = lookup.get(name + '|2026-07');
-    return {name, start, middle, end, change: start && end ? end.employees - start.employees : null};
+    const observations = DATA.periods.map(period => lookup.get(name + '|' + period));
+    const start = observations[0], end = observations[observations.length - 1];
+    return {name, observations, end, change: start && end ? end.employees - start.employees : null};
   }).sort((a, b) => (b.end?.employees || 0) - (a.end?.employees || 0));
   $('rows').innerHTML = rows.map(row => `<tr>
-    <td>${escapeHtml(row.name)}</td><td>${fmt(row.start?.employees)}</td>
-    <td>${fmt(row.middle?.employees)}</td><td>${fmt(row.end?.employees)}</td>
+    <td>${escapeHtml(row.name)}</td>${row.observations.map(item => `<td>${fmt(item?.employees)}</td>`).join('')}
     <td>${row.change == null ? '—' : (row.change > 0 ? '+' : '') + fmt(row.change)}</td>
     <td>${row.end?.employees ? pct(100 * row.end.selected / row.end.employees) : '—'}</td>
     <td>${pct(educationShare(row.end))}</td>
   </tr>`).join('');
 }
 function renderBureauTable(scope, selectedId) {
+  $('bureau-header').innerHTML = '<th>OPM subelement</th>' + DATA.periods.map(period => `<th>${periodLabel(period)}</th>`).join('') +
+    `<th>Change<br>${periodLabel(firstPeriod)}–${periodLabel(lastPeriod)}</th>`;
   const individual = scope && scope !== '__cfo__' && scope !== '__other__';
   if (!individual) {
     $('bureau-table-caption').textContent = 'Select an individual agency to see its OPM subelements.';
@@ -163,18 +172,15 @@ function renderBureauTable(scope, selectedId) {
   }
   const bureaus = [...bureauById.values()].filter(row => row.agency === scope)
     .map(row => {
-      const start = bureauLookup.get(row.id + '|2025-09');
-      const middle = bureauLookup.get(row.id + '|2026-02');
-      const end = bureauLookup.get(row.id + '|2026-07');
-      return {row, start, middle, end,
+      const observations = DATA.periods.map(period => bureauLookup.get(row.id + '|' + period));
+      const start = observations[0], end = observations[observations.length - 1];
+      return {row, observations, end,
         change: start && end ? end.employees - start.employees : null};
     }).sort((a, b) => (b.end?.employees || 0) - (a.end?.employees || 0));
   $('bureau-table-caption').textContent = `${bureaus.length} OPM subelements within ${scope}. Select one above to see its trend and education mix.`;
   $('bureau-rows').innerHTML = bureaus.map(item => `<tr${item.row.id === selectedId ? ' style="background:#e8f3f6;font-weight:700"' : ''}>
     <td>${escapeHtml(bureauLabel(item.row))}</td>
-    <td>${fmt(item.start?.employees)}</td>
-    <td>${fmt(item.middle?.employees)}</td>
-    <td>${fmt(item.end?.employees)}</td>
+    ${item.observations.map(row => `<td>${fmt(row?.employees)}</td>`).join('')}
     <td>${item.change == null ? '—' : (item.change > 0 ? '+' : '') + fmt(item.change)}</td>
   </tr>`).join('');
 }
@@ -185,10 +191,17 @@ function render() {
   const points = DATA.periods.map(period => bureauId ? bureauLookup.get(bureauId + '|' + period) :
     !scope || groupScope ? total(period, scope) : lookup.get(scope + '|' + period));
   const values = points.map(row => value(row, measure));
-  const first = values[0], last = values[2];
+  const first = values[0], last = values[values.length - 1];
   const difference = first != null && last != null ? last - first : null;
   const selectedName = bureauId ? `${scope} › ${bureauLabel(bureauById.get(bureauId))}` : scopeLabel(scope);
   $('trend-title').textContent = selectedName + ' · ' + measureLabel(measure);
+  $('period-note').textContent = `${DATA.periods.length} OPM employment snapshots · ${rangeLabel}`;
+  $('start-period').textContent = periodLabel(firstPeriod);
+  $('end-period').textContent = periodLabel(lastPeriod);
+  $('coverage-note').textContent = periodLabel(lastPeriod);
+  $('series-title').textContent = `Occupational series · ${periodLabel(lastPeriod)}`;
+  $('education-title').textContent = `Education breakdown · ${periodLabel(lastPeriod)}`;
+  $('agency-table-caption').textContent = `Agency employee counts across ${DATA.periods.length} snapshots. A missing observation (—) means that grouping is absent from that file, not zero. Change compares the first and latest observations only when both exist.`;
   $('notice').textContent = scope ? 'Selected scope: ' + selectedName :
     'Totals cover every agency grouping present in each file; coverage can change between snapshots.';
   $('start').textContent = isPercent(measure) ? pct(first) : fmt(first);
@@ -204,16 +217,16 @@ function render() {
   const individual = scope && !groupScope;
   $('coverage-label').textContent = individual ? 'Bureaus represented' : 'Agencies represented';
   $('coverage').textContent = individual ? DATA.bureaus.filter(row =>
-    row.period === '2026-07' && row.agency === scope && (!bureauId || row.id === bureauId)).length :
-    DATA.records.filter(row => row.period === '2026-07' && inScope(row, scope)).length;
+    row.period === lastPeriod && row.agency === scope && (!bureauId || row.id === bureauId)).length :
+    DATA.records.filter(row => row.period === lastPeriod && inScope(row, scope)).length;
   $('trend-summary').textContent = difference == null ?
-    'No complete September-to-July comparison for this scope.' :
-    difference > 0 ? 'Increase from September 2025 to July 2026.' :
-      difference < 0 ? 'Decrease from September 2025 to July 2026.' :
-        'No change from September 2025 to July 2026.';
+    `No complete ${rangeLabel} comparison for this scope.` :
+    difference > 0 ? `Increase from ${rangeLabel}.` :
+      difference < 0 ? `Decrease from ${rangeLabel}.` :
+        `No change from ${rangeLabel}.`;
   renderTrend(values, measure);
-  renderSeries(points[2]);
-  renderEducation(points[2]);
+  renderSeries(points[points.length - 1]);
+  renderEducation(points[points.length - 1]);
   renderTable(scope);
   renderBureauTable(scope, bureauId);
 }

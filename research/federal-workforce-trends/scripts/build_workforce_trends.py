@@ -1,4 +1,4 @@
-"""Build a local, aggregate-only dashboard from three OPM Status extracts."""
+"""Build a local, aggregate-only dashboard from six distinct OPM Status snapshots."""
 from __future__ import annotations
 
 import hashlib
@@ -10,7 +10,10 @@ from build_opm_employment_counts import dashboard_agency, normalize_opm_agency_f
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = {
-    "2025-09": ROOT / "data/raw/employment_202509_2.txt",
+    "2022-09": ROOT / "data/raw/employment_202209_3_2026-09-21.txt",
+    "2023-09": ROOT / "data/raw/employment_202309_3_2026-09-21.txt",
+    "2024-09": ROOT / "data/raw/employment_202409_3_2026-09-21.txt",
+    "2025-09": ROOT / "data/raw/employment_202509_3_2026-09-21.txt",
     "2026-02": ROOT / "data/raw/employment_202602_1.txt",
     "2026-07": ROOT / "data/raw/employment_202607_1_2026-09-21.txt",
 }
