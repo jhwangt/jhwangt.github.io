@@ -72,7 +72,17 @@ const reportedKeys = educationKeys.filter(key => key !== 'NO DATA REPORTED');
 $('education-options').innerHTML = educationKeys.map(key => `
   <label><input type="checkbox" value="${escapeHtml(key)}" ${bachelorsPlus.includes(key) ? 'checked' : ''}>
   ${escapeHtml(DATA.education_labels[key])}</label>`).join('');
+$('overview-education-options').innerHTML = $('education-options').innerHTML;
 const educationChecks = [...$('education-options').querySelectorAll('input[type="checkbox"]')];
+const overviewEducationChecks = [...$('overview-education-options').querySelectorAll('input[type="checkbox"]')];
+function syncEducationChecks(source, changedBox) {
+  const chosen = new Set(source.filter(box => box.checked).map(box => box.value));
+  if (!chosen.size) {
+    changedBox.checked = true;
+    chosen.add(changedBox.value);
+  }
+  [...educationChecks, ...overviewEducationChecks].forEach(box => { box.checked = chosen.has(box.value); });
+}
 const selectedEducation = () => educationChecks.filter(box => box.checked).map(box => box.value);
 const educationCount = row => row ? selectedEducation().reduce((sum, key) =>
   sum + (row.education[key] || 0), 0) : null;
@@ -226,6 +236,38 @@ function renderEducation(row) {
     </div>`;
   }).join('');
 }
+let displayedDefinitionMeasure = null;
+function renderOverviewDefinition(row, measure) {
+  const definition = $('overview-definition');
+  const seriesMeasure = measure === 'selected' || measure === 'share';
+  const educationMeasure = measure === 'education' || measure === 'educationShare';
+  definition.hidden = !seriesMeasure && !educationMeasure;
+  if (definition.hidden) {
+    displayedDefinitionMeasure = measure;
+    return;
+  }
+  if (displayedDefinitionMeasure !== measure) definition.open = true;
+  displayedDefinitionMeasure = measure;
+  $('overview-definition-title').textContent = seriesMeasure ?
+    'What is included in selected occupational series?' :
+    'What is included in selected education levels?';
+  $('overview-series-definition').hidden = !seriesMeasure;
+  $('overview-education-definition').hidden = !educationMeasure;
+  if (seriesMeasure) {
+    const counts = row?.series || {};
+    $('overview-series-breakdown').innerHTML = row?.employees ?
+      Object.entries(DATA.series_labels).map(([key, label]) =>
+        `<tr><td>${escapeHtml(key)} · ${escapeHtml(label)}</td><td>${fmt(counts[key] || 0)}</td><td>${pct(100 * (counts[key] || 0) / row.employees)}</td></tr>`).join('') :
+      `<tr><td colspan="3">No ${periodLabel(lastPeriod)} employment observation for this scope.</td></tr>`;
+  } else {
+    const chosen = selectedEducation();
+    $('overview-education-summary').textContent = `${chosen.length} level${chosen.length === 1 ? '' : 's'} selected: ${chosen.map(key => DATA.education_labels[key]).join(', ')}.`;
+    $('overview-education-breakdown').innerHTML = row?.employees ?
+      educationKeys.map(key => `<tr${chosen.includes(key) ? ' class="chosen-level"' : ''}><td>${escapeHtml(DATA.education_labels[key])}</td><td>${fmt(row.education[key] || 0)}</td><td>${pct(100 * (row.education[key] || 0) / row.employees)}</td></tr>`).join('') :
+      `<tr><td colspan="3">No ${periodLabel(lastPeriod)} employment observation for this scope.</td></tr>`;
+  }
+  $('overview-definition-period').textContent = `Composition in ${periodLabel(lastPeriod)} for ${scopeLabel($('agency').value)}${$('bureau').value ? ' › ' + bureauLabel(bureauById.get($('bureau').value)) : ''}. Shares use all employees in this scope as the denominator.`;
+}
 function renderRanking(scope, measure) {
   const candidates = names.filter(name => !scope ||
     (scope === '__cfo__' ? groupOf[name] === 'CFO Act' :
@@ -345,6 +387,7 @@ function render() {
   renderCompare(scope, measure);
   renderSeries(points[points.length - 1]);
   renderEducation(points[points.length - 1]);
+  renderOverviewDefinition(points[points.length - 1], measure);
   renderTable(scope);
   renderBureauTable(scope, bureauId);
 }
@@ -373,8 +416,8 @@ $('compare-options').addEventListener('change', event => {
   $('compare-limit').textContent = `${compareIds.size} bureau${compareIds.size === 1 ? '' : 's'} selected (maximum four).`;
   render();
 });
-educationChecks.forEach(box => box.addEventListener('change', () => {
-  if (!selectedEducation().length) box.checked = true;
+[...educationChecks, ...overviewEducationChecks].forEach(box => box.addEventListener('change', () => {
+  syncEducationChecks(overviewEducationChecks.includes(box) ? overviewEducationChecks : educationChecks, box);
   if (!['education', 'educationShare'].includes($('measure').value)) {
     $('measure').value = 'educationShare';
   }
@@ -385,7 +428,7 @@ document.querySelectorAll('[data-education-preset]').forEach(button => {
     const preset = button.dataset.educationPreset;
     const keys = preset === 'bachelors' ? bachelorsPlus :
       preset === 'graduate' ? graduatePlus : reportedKeys;
-    educationChecks.forEach(box => { box.checked = keys.includes(box.value); });
+    [...educationChecks, ...overviewEducationChecks].forEach(box => { box.checked = keys.includes(box.value); });
     $('measure').value = 'educationShare';
     render();
   });
