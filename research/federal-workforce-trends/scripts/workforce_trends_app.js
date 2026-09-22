@@ -25,6 +25,30 @@ const bureauById = new Map(DATA.bureaus.map(row => [row.id, row]));
 const bureauLookup = new Map(DATA.bureaus.map(row => [row.id + '|' + row.period, row]));
 const bureauLabel = row => row.component === row.agency ? row.bureau :
   `${row.bureau} (${row.component})`;
+const compareIds = new Set();
+let compareInitialized = false;
+const compareColors = ['#0f7791', '#b45c38', '#7053a6', '#22784f'];
+const agencyBureaus = agency => [...bureauById.values()].filter(row => row.agency === agency);
+const compareLabel = row => `${row.agency} › ${bureauLabel(row)}`;
+function refreshCompareOptions() {
+  const agency = $('agency').value, query = $('compare-search').value.trim().toLowerCase();
+  if (agency && agency !== '__cfo__' && agency !== '__other__' && !compareInitialized) {
+    compareInitialized = true;
+    agencyBureaus(agency).sort((a, b) =>
+      (bureauLookup.get(b.id + '|' + lastPeriod)?.employees || 0) -
+      (bureauLookup.get(a.id + '|' + lastPeriod)?.employees || 0)).slice(0, 2)
+      .forEach(row => compareIds.add(row.id));
+  }
+  const bureaus = [...bureauById.values()].filter(row =>
+    (!agency || (agency === '__cfo__' ? groupOf[row.agency] === 'CFO Act' :
+      agency === '__other__' ? groupOf[row.agency] === 'Other agency' : row.agency === agency)) &&
+    (!query || compareLabel(row).toLowerCase().includes(query))).sort((a, b) =>
+    (bureauLookup.get(b.id + '|' + lastPeriod)?.employees || 0) -
+    (bureauLookup.get(a.id + '|' + lastPeriod)?.employees || 0) ||
+    compareLabel(a).localeCompare(compareLabel(b)));
+  $('compare-options').innerHTML = bureaus.length ? bureaus.map(row => `<label><input type="checkbox" value="${row.id}" ${compareIds.has(row.id) ? 'checked' : ''}><span>${escapeHtml(compareLabel(row))} · ${fmt(bureauLookup.get(row.id + '|' + lastPeriod)?.employees)} in ${periodLabel(lastPeriod)}</span></label>`).join('') : '<span>No matching bureaus.</span>';
+  $('compare-limit').textContent = `${compareIds.size} bureau${compareIds.size === 1 ? '' : 's'} selected (maximum four). Change Agency to browse more; selections remain. The first agency you choose starts with its two largest latest-snapshot bureaus.`;
+}
 function refreshBureauOptions() {
   const agency = $('agency').value;
   const individual = agency && agency !== '__cfo__' && agency !== '__other__';
@@ -115,6 +139,54 @@ function renderTrend(values, measure) {
   }
   $('trend').innerHTML = svg;
 }
+function renderCompare(scope, measure) {
+  const selected = [...compareIds].map(id => bureauById.get(id)).filter(Boolean);
+  $('compare-caption').textContent = `${selected.length} OPM subelement${selected.length === 1 ? '' : 's'} selected. The chart uses ${measureLabel(measure)} and the same education choices as the main chart. You can compare bureaus from different agencies.`;
+  $('compare-legend').innerHTML = selected.map((row, i) => `<span><i class="compare-swatch" style="background:${compareColors[i]}"></i>${escapeHtml(compareLabel(row))}<button type="button" data-remove-bureau="${row.id}" aria-label="Remove ${escapeHtml(compareLabel(row))} from comparison">×</button></span>`).join('');
+  $('compare-header').innerHTML = selected.length ? '<th>OPM subelement</th>' +
+    DATA.periods.map(period => `<th>${periodLabel(period)}</th>`).join('') +
+    `<th>Change<br>${periodLabel(firstPeriod)}–${periodLabel(lastPeriod)}</th>` : '';
+  if (!selected.length) {
+    $('compare-trend').innerHTML = '';
+    $('compare-rows').innerHTML = '';
+    return;
+  }
+  const series = selected.map(row => ({row, values: DATA.periods.map(period =>
+    value(bureauLookup.get(row.id + '|' + period), measure))}));
+  const present = series.flatMap(item => item.values).filter(item => item != null);
+  const high = Math.max(1, ...present) * 1.1;
+  const y = item => 265 - item / high * 220;
+  const dates = DATA.periods.map(period => Date.parse(period + '-01T00:00:00Z'));
+  const span = dates[dates.length - 1] - dates[0];
+  const x = index => span ? 120 + 580 * (dates[index] - dates[0]) / span : 410;
+  let svg = '';
+  for (let i = 0; i <= 4; i++) {
+    const tick = high * i / 4, yy = y(tick);
+    svg += `<line x1="95" y1="${yy}" x2="710" y2="${yy}" stroke="#dce5e9"/>`;
+    svg += `<text class="axis" x="88" y="${yy + 4}" text-anchor="end">${isPercent(measure) ? pct(tick) : fmt(tick)}</text>`;
+  }
+  DATA.periods.forEach((period, i) => {
+    svg += `<text class="axis" x="${x(i)}" y="295" text-anchor="end" transform="rotate(-35 ${x(i)} 295)">${periodLabel(period)}</text>`;
+  });
+  series.forEach(({row, values}, index) => {
+    const color = compareColors[index];
+    for (let i = 0; i < values.length - 1; i++) {
+      if (values[i] != null && values[i + 1] != null) {
+        svg += `<line x1="${x(i)}" y1="${y(values[i])}" x2="${x(i + 1)}" y2="${y(values[i + 1])}" stroke="${color}" stroke-width="3"/>`;
+      }
+    }
+    values.forEach((item, i) => {
+      if (item != null) svg += `<circle cx="${x(i)}" cy="${y(item)}" r="5" fill="${color}"><title>${escapeHtml(compareLabel(row))} · ${periodLabel(DATA.periods[i])}: ${isPercent(measure) ? pct(item) : fmt(item)}</title></circle>`;
+    });
+  });
+  $('compare-trend').innerHTML = svg;
+  $('compare-rows').innerHTML = series.map(({row, values}) => {
+    const first = values[0], last = values[values.length - 1];
+    const change = first == null || last == null ? '—' :
+      (last - first > 0 ? '+' : '') + (isPercent(measure) ? (last - first).toFixed(2) + ' pp' : fmt(last - first));
+    return `<tr><td>${escapeHtml(compareLabel(row))}</td>${values.map(item => `<td>${isPercent(measure) ? pct(item) : fmt(item)}</td>`).join('')}<td>${change}</td></tr>`;
+  }).join('');
+}
 function renderSeries(row) {
   const counts = row?.series || {};
   const entries = Object.entries(DATA.series_labels).map(([key, name]) =>
@@ -178,7 +250,7 @@ function renderBureauTable(scope, selectedId) {
         change: start && end ? end.employees - start.employees : null};
     }).sort((a, b) => (b.end?.employees || 0) - (a.end?.employees || 0));
   $('bureau-table-caption').textContent = `${bureaus.length} OPM subelements within ${scope}. Select one above to see its trend and education mix.`;
-  $('bureau-rows').innerHTML = bureaus.map(item => `<tr${item.row.id === selectedId ? ' style="background:#e8f3f6;font-weight:700"' : ''}>
+  $('bureau-rows').innerHTML = bureaus.map(item => `<tr${item.row.id === selectedId ? ' class="selected-bureau"' : ''}>
     <td>${escapeHtml(bureauLabel(item.row))}</td>
     ${item.observations.map(row => `<td>${fmt(row?.employees)}</td>`).join('')}
     <td>${item.change == null ? '—' : (item.change > 0 ? '+' : '') + fmt(item.change)}</td>
@@ -225,15 +297,36 @@ function render() {
       difference < 0 ? `Decrease from ${rangeLabel}.` :
         `No change from ${rangeLabel}.`;
   renderTrend(values, measure);
+  renderCompare(scope, measure);
   renderSeries(points[points.length - 1]);
   renderEducation(points[points.length - 1]);
   renderTable(scope);
   renderBureauTable(scope, bureauId);
 }
 
-$('agency').addEventListener('change', () => { refreshBureauOptions(); render(); });
+$('agency').addEventListener('change', () => { refreshBureauOptions(); refreshCompareOptions(); render(); });
 $('bureau').addEventListener('change', render);
 $('measure').addEventListener('change', render);
+$('compare-search').addEventListener('input', refreshCompareOptions);
+$('compare-legend').addEventListener('click', event => {
+  const id = event.target?.dataset?.removeBureau;
+  if (!id) return;
+  compareIds.delete(id);
+  refreshCompareOptions();
+  render();
+});
+$('compare-options').addEventListener('change', event => {
+  const box = event.target;
+  if (box.type !== 'checkbox') return;
+  if (box.checked && compareIds.size >= compareColors.length) {
+    box.checked = false;
+    $('compare-limit').textContent = 'Select at most four bureaus. Uncheck one before adding another.';
+    return;
+  }
+  if (box.checked) compareIds.add(box.value); else compareIds.delete(box.value);
+  $('compare-limit').textContent = `${compareIds.size} bureau${compareIds.size === 1 ? '' : 's'} selected (maximum four).`;
+  render();
+});
 educationChecks.forEach(box => box.addEventListener('change', () => {
   if (!selectedEducation().length) box.checked = true;
   if (!['education', 'educationShare'].includes($('measure').value)) {
@@ -252,4 +345,5 @@ document.querySelectorAll('[data-education-preset]').forEach(button => {
   });
 });
 refreshBureauOptions();
+refreshCompareOptions();
 render();
