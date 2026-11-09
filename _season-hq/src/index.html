@@ -27,7 +27,7 @@ a { color: var(--red); text-underline-offset: 3px; }
 .shell { display: grid; grid-template-columns: 236px minmax(0,1fr); min-height: 100vh; }
 aside {
   background: #181616; color: white; padding: 26px 16px; position: sticky;
-  top: 0; height: 100vh; border-right: 1px solid #352d2d;
+  top: 0; height: 100vh; overflow-y: auto; border-right: 1px solid #352d2d;
 }
 .brand { display: flex; align-items: center; gap: 12px; margin: 0 7px 32px; }
 .brand strong { display: block; line-height: 1.2; font-size: 18px; }
@@ -44,7 +44,7 @@ nav { display: grid; gap: 5px; }
 nav button { text-align: left; background: none; border-color: transparent; color: #e5dddd; }
 nav button[aria-current=page] { color: white; background: #482023; border-color: #a74347; }
 nav span { display: inline-block; width: 26px; }
-.sidefoot { position: absolute; bottom: 25px; left: 24px; }
+.sidefoot { margin: 22px 7px 0; }
 main { width: 100%; max-width: 1320px; margin-inline: auto; padding: 28px clamp(18px,4vw,52px) 60px; }
 .top, .row, .tools, .heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .top { margin-bottom: 20px; }
@@ -87,6 +87,12 @@ dialog::backdrop { background: #171515a8; }
 form, label { display: grid; gap: 10px; }
 label { gap: 5px; }
 label.check { display: flex; align-items: center; }
+#award-fields { margin: 0; padding: 8px 12px; border: 1px solid var(--edge); border-radius: 6px; }
+#award-options { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+#award-options input { accent-color: var(--red); }
+.award-badge { background: var(--tint); color: #8d1520; }
+nav .nav-heading { padding: 12px 14px 3px; }
+@media (max-width: 800px) { nav .nav-heading { display: none; } }
 form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
 #notice, #form-error { color: #8d1520; margin: 0 0 10px; }
 #notice:empty, #form-error:empty { display: none; }
@@ -131,6 +137,7 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
 <dialog id="editor" aria-labelledby="editor-title"><form id="form">
 <div class="row"><h2 id="editor-title">New entry</h2><button type="button" id="close" aria-label="Close editor">✕</button></div>
 <div class="pair"><label>Section<select name="category" id="category"></select></label><label>Status<select name="status" id="status"></select></label></div>
+<fieldset id="award-fields"><legend>Award tags</legend><div id="award-options"></div></fieldset>
 <label>Title<input name="title" required maxlength="140"></label>
 <div class="pair"><label>Owner or role<input name="owner" maxlength="100" placeholder="Unassigned"></label><label>Due date / meeting date<input name="due" type="date"></label></div>
 <label id="notes-label">Notes<textarea name="notes" maxlength="8000"></textarea></label>
@@ -142,9 +149,32 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
 </form></dialog>
 <script>
 __SHARED_TRANSPORT__
-const sections = ['Overview','Goals','Rules','Robot','Autonomous','Outreach','Events','Meetings'];
+const awardNames = ['Inspire','Think','Connect','Reach','Sustain','Design','Innovate','Control','Judges’ Choice'];
+const sections = ['Overview','Goals',...awardNames,'Rules','Events','Meetings'];
+const recordCategories = ['Awards','Goals','Rules','Events','Meetings'];
+const awardGuide = {
+  Inspire: 'Bring together the strongest robot, team, and portfolio evidence. Track gaps across the award areas.',
+  Think: 'Capture engineering decisions, iterations, and the evidence that explains what the team learned.',
+  Connect: 'Track student skill-development goals and relationships with STEM professionals.',
+  Reach: 'Record outreach activities, who participated, and what impact the work had.',
+  Sustain: 'Track fundraising, financial planning, role transitions, and team continuity.',
+  Design: 'Collect CAD, subsystem integration, and the trade-offs behind robot design choices.',
+  Innovate: 'Document novel mechanisms, prototypes, test results, and what makes the solution distinctive.',
+  Control: 'Track autonomous routines, sensors, software, and Pedro Pathing tuning evidence.',
+  'Judges’ Choice': 'Capture distinctive team efforts. FIRST lists this award as optional.'
+};
+const awardManual = 'https://ftc-resources.firstinspires.org/ftc/archive/2027/game/manual-06';
+const legacySections = {Robot:'Design',Autonomous:'Control',Outreach:'Reach'};
+function awardsFor(record) {
+  if (Array.isArray(record.awards)) return record.awards;
+  if (record.category === 'Autonomous') return ['Control'];
+  if (record.category === 'Robot') return record.id === 'starter-7' ? ['Design','Innovate'] : ['Design'];
+  if (record.category === 'Outreach') return /fundrais|sponsor|budget/i.test(record.title) ? ['Sustain'] : ['Reach'];
+  return [];
+}
 const statusList = ['Planned','In progress','Blocked','Done'];
-const names = {Overview:'Overview',Goals:'Goals & ownership',Rules:'Rules & clarifications',Robot:'Robot build',Autonomous:'Autonomous lab',Outreach:'Outreach & fundraising',Events:'Event prep',Meetings:'Meeting log'};
+const names = {Awards:'Award evidence',Overview:'Overview',Goals:'Goals & ownership',Rules:'Rules & clarifications',Robot:'Robot build',Autonomous:'Autonomous lab',Outreach:'Outreach & fundraising',Events:'Event prep',Meetings:'Meeting log'};
+for (const award of awardNames) names[award] = award + ' Award';
 const descriptions = {Goals:'Set season outcomes, assign leads, and confirm what success looks like.',Rules:'Search rule IDs, topics, sources, and team interpretations. Check FIRST for the latest official ruling.',Robot:'Track CAD, prototypes, fabrication, and tests. Add evidence and the next build decision.',Autonomous:'Record tuning experiments and Pedro Pathing issues, including what changed and what the robot did.',Outreach:'Track outreach activities, sponsor conversations, and fundraising follow-ups.',Events:'Check off inspection, pit, judging, and drive-team tasks. Add an event name to task titles when reusing the checklist.',Meetings:'Record decisions, mark completed meetings, and assign follow-ups as entries with owners and due dates.'};
 const manual = 'https://ftc-resources.firstinspires.org/ftc/game';
 const seeds = [
@@ -171,15 +201,19 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g,char=>({'&':'&amp;',
 const editor = $('#editor'), form = $('#form');
 const template = 'Attendance\n\nUpdates since last meeting\n\nDecisions\n\nBlockers\n\nFollow-ups (owner and due date)\n\nNext meeting';
 let records = seeds, section = 'Overview', query='', filter='', editing, online=false, saving=false;
-const symbols = ['◈','◎','▤','⚙','⌁','◇','✓','◷'];
-$('#nav').innerHTML = sections.map((s,i)=>'<button data-section="'+s+'"><span aria-hidden="true">'+symbols[i]+'</span>'+names[s]+'</button>').join('');
-$('#category').innerHTML = sections.slice(1).map(s=>'<option value="'+s+'">'+names[s]+'</option>').join('');
+const symbols = {Overview:'◈',Goals:'◎',Rules:'▤',Events:'✓',Meetings:'◷'};
+$('#nav').innerHTML = sections.map(s =>
+  (s==='Inspire'?'<div class="nav-heading mono">Judged awards</div>':s==='Rules'?'<div class="nav-heading mono">Team operations</div>':'')+
+  '<button data-section="'+s+'"><span aria-hidden="true">'+(symbols[s]||'◇')+'</span>'+names[s]+'</button>'
+).join('');
+$('#category').innerHTML = recordCategories.map(s=>'<option value="'+s+'">'+(names[s]||s)+'</option>').join('');
+$('#award-options').innerHTML = awardNames.map(award=>'<label class="check"><input name="awards" type="checkbox" value="'+award+'"> '+award+'</label>').join('');
 $('#status').innerHTML = statusList.map(s=>'<option>'+s+'</option>').join('');
 function date(value){ return value ? new Date(value.length===10?value+'T12:00:00':value).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : ''; }
 function card(r){
   const source = /^https?:\/\//i.test(r.source) ? '<a target="_blank" rel="noopener noreferrer" href="'+esc(r.source)+'">Open source ↗</a>' : '';
   const check = r.category==='Events' ? '<label class="checkline"><input type="checkbox" data-check="'+r.id+'" '+(r.status==='Done'?'checked':'')+' aria-label="Complete '+esc(r.title)+'"> Complete</label>' : '';
-  return '<article class="card"><div class="row"><div><span class="badge '+(r.status==='Done'?'done':r.status==='Blocked'?'blocked':'')+'">'+esc(r.status)+'</span> '+(r.tentative?'<span class="badge tentative">Tentative</span>':'')+'</div><button data-edit="'+r.id+'" aria-label="Edit '+esc(r.title)+'">Edit</button></div><h3>'+esc(r.title)+'</h3><div class="muted">'+esc(r.owner||'Unassigned')+(r.due?' · '+(r.category==='Meetings'?'Met ':'Due ')+esc(date(r.due)):'')+'</div><p>'+esc(r.notes)+'</p>'+(r.next?'<p><strong>Next</strong> '+esc(r.next)+'</p>':'')+'<div class="row">'+source+check+(r.updated?'<small class="muted">Updated '+esc(date(r.updated))+(r.by?' · '+esc(r.by):'')+'</small>':'')+'</div></article>';
+  return '<article class="card"><div class="row"><div><span class="badge '+(r.status==='Done'?'done':r.status==='Blocked'?'blocked':'')+'">'+esc(r.status)+'</span> '+(r.tentative?'<span class="badge tentative">Tentative</span>':'')+awardsFor(r).map(award=>' <span class="badge award-badge">'+esc(award)+'</span>').join('')+'</div><button data-edit="'+r.id+'" aria-label="Edit '+esc(r.title)+'">Edit</button></div><h3>'+esc(r.title)+'</h3><div class="muted">'+esc(r.owner||'Unassigned')+(r.due?' · '+(r.category==='Meetings'?'Met ':'Due ')+esc(date(r.due)):'')+'</div><p>'+esc(r.notes)+'</p>'+(r.next?'<p><strong>Next</strong> '+esc(r.next)+'</p>':'')+'<div class="row">'+source+check+(r.updated?'<small class="muted">Updated '+esc(date(r.updated))+(r.by?' · '+esc(r.by):'')+'</small>':'')+'</div></article>';
 }
 function list(items){return items.length?items.map(card).join(''):'<p class="empty">No entries match this view.</p>';}
 function overview(){
@@ -194,7 +228,7 @@ function overview(){
 }
 function filtered(){
   const terms=query.toLowerCase().trim().split(/\s+/);
-  const matches=records.filter(r=>r.category===section && (!filter||r.status===filter) && terms.every(term=>[r.title,r.notes,r.owner,r.source,r.next].join(' ').toLowerCase().includes(term)));
+  const matches=records.filter(r=>(awardNames.includes(section) ? awardsFor(r).includes(section) : r.category===section) && (!filter||r.status===filter) && terms.every(term=>[r.title,r.notes,r.owner,r.source,r.next].join(' ').toLowerCase().includes(term)));
   if(section==='Meetings') matches.sort((a,b)=>(b.due||'').localeCompare(a.due||''));
   $('#items').innerHTML=list(matches);
 }
@@ -202,7 +236,7 @@ function render(){
   $('#crumb').textContent=names[section];
   $('#nav').querySelectorAll('button').forEach(b=>b.dataset.section===section?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current'));
   if(section==='Overview'){$('#view').innerHTML=overview();return;}
-  $('#view').innerHTML='<section class="hero"><div><span class="label">Team Ingenuity / Season HQ</span><h1>'+names[section]+'</h1><p>'+descriptions[section]+'</p></div></section><div class="toolbar"><input id="query" type="search" aria-label="Search this section" placeholder="'+(section==='Rules'?'Search rule ID, topic, or clarification…':'Search this section…')+'"><select id="filter" aria-label="Filter by status"><option value="">All statuses</option>'+statusList.map(s=>'<option>'+s+'</option>').join('')+'</select>'+(section==='Meetings'?'<button id="template">＋ Use meeting template</button>':'')+'</div><div class="list" id="items"></div>';
+  $('#view').innerHTML='<section class="hero"><div><span class="label">Team Ingenuity / Season HQ</span><h1>'+names[section]+'</h1><p>'+(awardGuide[section]||descriptions[section])+'</p>'+(awardGuide[section]?'<p><a style="color:#ffb8bb" href="'+awardManual+'" target="_blank" rel="noopener">FIRST award criteria ↗</a></p>':'')+'</div></section><div class="toolbar"><input id="query" type="search" aria-label="Search this section" placeholder="'+(section==='Rules'?'Search rule ID, topic, or clarification…':'Search this section…')+'"><select id="filter" aria-label="Filter by status"><option value="">All statuses</option>'+statusList.map(s=>'<option>'+s+'</option>').join('')+'</select>'+(section==='Meetings'?'<button id="template">＋ Use meeting template</button>':'')+'</div><div class="list" id="items"></div>';
   $('#query').value=query; $('#filter').value=filter;
   $('#query').oninput=e=>{query=e.target.value;filtered();};
   $('#filter').onchange=e=>{filter=e.target.value;filtered();};
@@ -210,12 +244,16 @@ function render(){
   filtered();
 }
 function navigate(target){
+  target=legacySections[target]||target;
   section=sections.includes(target)?target:'Overview'; query=''; filter=''; render();
 }
 function openEditor(record, category, useTemplate=false){
   editing=record;
   form.reset();
-  form.elements.category.value=record?.category||category;
+  const selectedAward=awardNames.includes(category)?category:null;
+  form.elements.category.value=(record && (legacySections[record.category]?'Awards':record.category))||(selectedAward?'Awards':category);
+  const selectedTags=record?awardsFor(record):selectedAward?[selectedAward]:[];
+  for (const checkbox of form.querySelectorAll('[name="awards"]')) checkbox.checked=selectedTags.includes(checkbox.value);
   form.elements.status.value=record?.status||'Planned';
   for(const key of ['title','owner','due','notes','next','source','by']) form.elements[key].value=record?.[key]||'';
   form.elements.tentative.checked=record?.tentative??false;
@@ -245,7 +283,11 @@ form.onsubmit=async event=>{
   event.preventDefault(); if(saving)return;
   saving=true; $('#save').disabled=true; $('#form-error').textContent='';
   try{
-    const values=Object.fromEntries(new FormData(form));values.tentative=form.elements.tentative.checked;
+    const fields=new FormData(form);
+    const values=Object.fromEntries(fields);
+    values.awards=fields.getAll('awards');
+    values.tentative=form.elements.tentative.checked;
+    if (values.category==='Awards' && !values.awards.length) throw Error('Select at least one award tag for this entry.');
     if(values.category==='Meetings'&&values.status==='Done'&&!values.due)throw Error('Set the meeting date before marking it Done.');
     await save({...values,id:editing?.id||crypto.randomUUID(),revision:editing?.revision||0});
     editor.close();$('#notice').textContent='Entry saved to the shared workspace.';
@@ -258,7 +300,7 @@ editor.addEventListener('cancel',event=>{if(saving)event.preventDefault();});
 $('#refresh').onclick=refresh;
 document.addEventListener('click',event=>{
   const btn=event.target.closest('button');
-  if(btn?.dataset.section){location.hash=btn.dataset.section;navigate(btn.dataset.section);}
+  if(btn?.dataset.section){location.hash=encodeURIComponent(btn.dataset.section);navigate(btn.dataset.section);}
   if(btn?.dataset.edit){const record=records.find(r=>r.id===btn.dataset.edit);if(record)openEditor(record);}
 });
 document.addEventListener('change',async event=>{
@@ -270,8 +312,12 @@ document.addEventListener('change',async event=>{
   catch(e){control.checked=!control.checked;$('#notice').textContent=e.message;}
   finally{control.disabled=false;}
 });
-window.addEventListener('hashchange',()=>navigate(location.hash.slice(1)));
-navigate(location.hash.slice(1));
+function sectionFromHash() {
+  try { return decodeURIComponent(location.hash.slice(1)); }
+  catch { return 'Overview'; }
+}
+window.addEventListener('hashchange',()=>navigate(sectionFromHash()));
+navigate(sectionFromHash());
 if (connectSharedRecords) {
   $('#connection').hidden = false;
   $('#connect').onclick = () => {

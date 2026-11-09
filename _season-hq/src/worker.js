@@ -1,5 +1,6 @@
-const categories = ['Goals','Rules','Robot','Autonomous','Outreach','Events','Meetings'];
+const categories = ['Awards','Goals','Rules','Robot','Autonomous','Outreach','Events','Meetings'];
 const statuses = ['Planned','In progress','Blocked','Done'];
+const awards = ['Inspire','Think','Connect','Reach','Sustain','Design','Innovate','Control','Judges’ Choice'];
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -36,6 +37,12 @@ export default {
         record[key] = input[key].trim();
       }
       if (record.source && !/^https?:\/\//i.test(record.source)) return json({error:'Use an http or https source link'},400);
+      if (input.awards !== undefined) {
+        if (!Array.isArray(input.awards) || input.awards.length > awards.length ||
+            input.awards.some(award => !awards.includes(award))) return json({error:'Invalid award tags'},400);
+        record.awards = [...new Set(input.awards)];
+      }
+      if (input.category === 'Awards' && !record.awards?.length) return json({error:'Select an award tag'},400);
       const data = JSON.stringify(record);
       const result = input.revision === 0
         ? await env.DB.prepare('INSERT INTO records (id,data) VALUES (?,?) ON CONFLICT(id) DO NOTHING').bind(record.id,data).run()
