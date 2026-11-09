@@ -137,6 +137,11 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
 .issue-view:hover { border-color: var(--red); }
 .issue-view strong { display: block; color: var(--red); }
 .issue-view span { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; }
+
+.issue-compose { width: min(580px, calc(100% - 32px)); }
+.issue-compose p { margin: 0; }
+.issue-compose .row { gap: 10px; }
+.issue-compose textarea { min-height: 200px; }
 </style>
 <div class="shell">
   <aside>
@@ -149,6 +154,22 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
     <div id="view"></div>
   </main>
 </div>
+<dialog class="issue-compose" id="issue-compose" aria-labelledby="compose-title">
+  <form id="compose-form">
+    <div class="row">
+      <h2 id="compose-title">New issue</h2>
+      <button type="button" id="close-compose" aria-label="Close issue form">×</button>
+    </div>
+    <p class="muted" id="compose-label"></p>
+    <label>Issue title<input name="title" type="text" maxlength="120" required></label>
+    <label>Notes<textarea name="body" rows="9" maxlength="1500"></textarea></label>
+    <p class="muted">Review the draft in GitHub and select <strong>Create</strong> to save it to the private tracker.</p>
+    <div class="row">
+      <button type="button" id="cancel-compose">Cancel</button>
+      <button type="submit" class="primary">Continue to GitHub ↗</button>
+    </div>
+  </form>
+</dialog>
 <script>
 const repo = 'https://github.com/jhwangt/ingenuity-season-data';
 const manual = 'https://ftc-resources.firstinspires.org/ftc/archive/2027/game/manual-06';
@@ -174,7 +195,7 @@ const meetingTemplate = '## Date and attendance\n\n## Updates since the last mee
 const eventTemplate = '## Event and date\n\n## Checklist\n- [ ] Registration, roster, and logistics\n- [ ] Robot inspection\n- [ ] Pack batteries, tools, and spares\n- [ ] Judging and drive-team rehearsal\n\n## Owner and due date';
 const rulesTemplate = '## Rule ID and manual revision\n\n## Official source\n\n## Question or clarification\n\n## Team decision and follow-up';
 const entryTemplate = '## Goal or evidence\n\n## Links and results\n\n## Owner and due date\n\n## Next action';
-const names = ['Overview', ...Object.keys(awards), ...Object.keys(operations)];
+const names = ['Overview','Events','Meetings','Goals','Rules', ...Object.keys(awards)];
 const legacy = {Robot:'Design',Autonomous:'Control',Outreach:'Reach'};
 const $ = selector => document.querySelector(selector);
 const titleFor = name => Object.hasOwn(awards,name) ? name + ' Award' : (operations[name]?.title || name);
@@ -183,12 +204,12 @@ function issueQuery(label, filter='') {
   const query = ['is:issue', label ? 'label:"'+label+'"' : '', filter].filter(Boolean).join(' ');
   return repo + '/issues?q=' + encodeURIComponent(query);
 }
-function newIssue(label, body) {
-  return repo + '/issues/new?' + new URLSearchParams({labels:label,body});
+function newIssue(label, title, body) {
+  return repo + '/issues/new?' + new URLSearchParams({labels:label,title,body});
 }
-function issueBoard(label='', body='') {
+function issueBoard(label='') {
   const action = label
-    ? '<a class="primary" href="'+newIssue(label,body)+'">＋ New '+(label==='Meeting'?'meeting log':'issue')+' on GitHub</a>'
+    ? '<button class="primary" type="button" id="new-issue">＋ New '+(label==='Meeting'?'meeting log':'issue')+'</button>'
     : '<a class="primary" href="'+repo+'/issues">Open private team tracker</a>';
   const views = [
     ['Open issues','Work still on the board','state:open'],
@@ -227,10 +248,31 @@ function render() {
   const templates = {Meetings:meetingTemplate, Events:eventTemplate, Rules:rulesTemplate,
     Control:'## Routine or issue\n\n## Robot setup and Pedro Pathing version\n\n## Reproduction steps\n\n## Expected and actual results\n\n## Telemetry or evidence\n\n## Owner, due date, and next action',
     Reach:'## Activity and audience\n\n## What the team did\n\n## Participation and impact\n\n## Evidence and follow-up'};
-  $('#view').innerHTML = hero(titleFor(section),description,sources)+issueBoard(label,templates[section]||entryTemplate);
+  $('#view').innerHTML = hero(titleFor(section),description,sources)+issueBoard(label);
+  $('#new-issue').onclick = () => openComposer(label, templates[section]||entryTemplate);
 }
+const composer = $('#issue-compose');
+const composeForm = $('#compose-form');
+let composeLabel = '';
+function openComposer(label, body) {
+  composeLabel = label;
+  composeForm.reset();
+  composeForm.elements.body.value = body;
+  $('#compose-title').textContent = label === 'Meeting' ? 'New meeting log' : 'New issue';
+  $('#compose-label').textContent = 'GitHub label · ' + label;
+  composer.showModal();
+  composeForm.elements.title.focus();
+}
+$('#close-compose').onclick = $('#cancel-compose').onclick = () => composer.close();
+composeForm.onsubmit = event => {
+  event.preventDefault();
+  const title = composeForm.elements.title.value.trim();
+  if (!title) { composeForm.elements.title.focus(); return; }
+  const draft = newIssue(composeLabel, title, composeForm.elements.body.value);
+  window.location.assign(draft);
+};
 $('#nav').innerHTML = names.map(name =>
-  (name==='Inspire'?'<div class="nav-heading mono">Judged awards</div>':name==='Goals'?'<div class="nav-heading mono">Team operations</div>':'')+
+  (name==='Inspire'?'<div class="nav-heading mono">Judged awards</div>':name==='Events'?'<div class="nav-heading mono">Team operations</div>':'')+
   '<a href="'+anchorFor(name)+'">'+titleFor(name)+'</a>'
 ).join('');
 window.addEventListener('hashchange',render);
