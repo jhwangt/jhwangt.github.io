@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-Qq/oLh1NtzGT+YU5A4nRI56w+qSOX7OQ7ZGXeI6XHuA='; style-src 'unsafe-inline'; img-src data:; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-NJFCXl2VrsR2LMsMbpgAnZeBYpl2VQDHPxcX/vxIDAg='; style-src 'unsafe-inline'; img-src data:; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
 <title>Season HQ · Team Ingenuity</title>
 <style>
 :root {
@@ -129,8 +129,8 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
 <div class="top"><div class="mono">Season HQ <span aria-hidden="true">/</span> <span id="crumb">Overview</span></div><div class="tools"><button id="refresh">Refresh</button><button class="primary" id="add">＋ New entry</button></div></div>
 <p id="notice" role="status"></p>
 <section class="panel connection" aria-label="Private GitHub tracker">
-  <div class="row"><p id="session-status" role="status">Connect GitHub to load and save private team records.</p><div class="tools">
-    <button id="session-action" type="button">Connect GitHub</button>
+  <div class="row"><p id="session-status" role="status">Use New entry to draft an issue, or Open tracker to edit existing issues on GitHub.</p><div class="tools">
+    <button id="session-action" type="button">Connect GitHub (token)</button>
     <a href="https://github.com/jhwangt/ingenuity-season-data/issues">Open tracker ↗</a>
   </div></div>
 </section>
@@ -156,9 +156,10 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
 <label>Source, evidence or issue link<input name="source" type="url" maxlength="500" placeholder="https://…"></label>
 <label>Updated by<input name="by" maxlength="100" placeholder="Name or initials"></label>
 <label class="check"><input name="tentative" type="checkbox"> Tentative · confirm with the team</label>
+<p id="draft-help" class="muted" hidden>Review your draft on GitHub, then click Create to save it. Draft fields are passed in the link. Enter confidential details directly in GitHub.</p>
 <p id="form-error" role="alert"></p><div class="row"><button type="button" id="cancel">Cancel</button><button class="primary" type="submit" id="save">Save entry</button></div>
 </form></dialog>
-<script src="github-records.js?v=1"></script>
+<script src="github-records.js?v=2"></script>
 <script>
 const awardNames = ['Inspire','Think','Connect','Reach','Sustain','Design','Innovate','Control','Judges’ Choice'];
 const sections = ['Overview','Events','Meetings','Goals','Rules',...awardNames];
@@ -259,8 +260,13 @@ function navigate(target){
   section=sections.includes(target)?target:'Overview'; query=''; filter=''; render();
 }
 function openEditor(record, category, useTemplate=false){
-  if (!token) { openSession(); return; }
+  if (!token && record?.issueNumber) {
+    window.location.assign('https://github.com/jhwangt/ingenuity-season-data/issues/'+record.issueNumber);
+    return;
+  }
   editing=record;
+  $('#draft-help').hidden=Boolean(token);
+  $('#save').textContent=token?'Save entry':'Continue to GitHub ↗';
   form.reset();
   const selectedAward=awardNames.includes(category)?category:null;
   form.elements.category.value=(record && (legacySections[record.category]?'Awards':record.category))||(selectedAward?'Awards':category);
@@ -301,7 +307,13 @@ form.onsubmit=async event=>{
     values.tentative=form.elements.tentative.checked;
     if (values.category==='Awards' && !values.awards.length) throw Error('Select at least one award tag for this entry.');
     if(values.category==='Meetings'&&values.status==='Done'&&!values.due)throw Error('Set the meeting date before marking it Done.');
-    const saved=await save({...values,id:editing?.id||crypto.randomUUID(),revision:editing?.revision||0});
+    const record={...values,id:editing?.id||crypto.randomUUID(),revision:editing?.revision||0};
+    if (!token) {
+      const draft=makeGitHubDraft(record);
+      window.location.assign(draft);
+      return;
+    }
+    const saved=await save(record);
     editor.close();$('#notice').textContent=saved.closeFailed?'Issue created in GitHub but still open. Edit it to mark it Done.':'Entry saved to the private GitHub tracker.';
   }catch(e){$('#form-error').textContent=e.message;}
   finally{saving=false;$('#save').disabled=false;}
@@ -318,6 +330,7 @@ document.addEventListener('click',event=>{
 document.addEventListener('change',async event=>{
   const control=event.target;
   if(!control.dataset.check)return;
+  if(!token){control.checked=!control.checked;openSession();return;}
   const record=records.find(r=>r.id===control.dataset.check);
   control.disabled=true;
   try{await save({...record,category:'Events',status:control.checked?'Done':'Planned'});$('#notice').textContent='Checklist updated.';}

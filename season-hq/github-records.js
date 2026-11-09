@@ -66,6 +66,16 @@ function issuePayload(record, current) {
     labels:[...new Set(labels)], ...(current ? {state:record.status==='Done'?'closed':'open'} : {})};
 }
 
+function makeGitHubDraft(record) {
+  if (!record.title.trim()) throw Error('Enter a title for this entry.');
+  if (record.status==='Done') throw Error('GitHub opens new drafts as open issues. Choose another status and close the issue after creating it.');
+  const payload=issuePayload(record,null);
+  const query=new URLSearchParams({title:payload.title,body:payload.body,labels:payload.labels.join(',')});
+  const url='https://github.com/jhwangt/ingenuity-season-data/issues/new?'+query;
+  if (url.length>7000) throw Error('This draft is too long to send in a link. Shorten it or add the remaining notes in GitHub.');
+  return url;
+}
+
 async function loadRecords() {
   const credential = token;
   if (!credential) throw Error('Connect GitHub first.');
@@ -133,7 +143,7 @@ function initializeGitHubSession() {
     if(!token){openSession();return;}
     if(activeWrites || refreshing)return;
     token='';issueIndex.clear();online=false;records=seeds;editing=null;
-    action.textContent='Connect GitHub';
+    action.textContent='Connect GitHub (token)';
     $('#session-status').textContent='Disconnected. Starter entries are shown.';
     $('#notice').textContent='';
     render();
