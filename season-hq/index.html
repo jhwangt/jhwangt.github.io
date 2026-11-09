@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-NJFCXl2VrsR2LMsMbpgAnZeBYpl2VQDHPxcX/vxIDAg='; style-src 'unsafe-inline'; img-src data:; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-G5b4RppgYYsK3CCaMC9YYXyskUQZL/8zGTK2tH0ftjo='; style-src 'unsafe-inline'; img-src data:; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
 <title>Season HQ · Team Ingenuity</title>
 <style>
 :root {
@@ -118,11 +118,18 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
   .hero-home { grid-template-columns: minmax(0,1fr); }
   .hero-logo { max-height: 145px; width: auto; max-width: 100%; justify-self: start; }
 }
+.sidebar-connection {
+  display: block; margin: 18px 7px 0; padding: 5px 7px;
+  background: transparent; color: #c4b9b9; border-color: transparent; font-size: 12px;
+}
+.sidebar-connection:hover { color: white; border-color: #a74347; }
+@media (max-width: 800px) { .sidebar-connection { margin: 7px 0 0; } }
 </style>
 <div class="shell">
 <aside>
 <div class="brand"><div class="mark" aria-hidden="true">I</div><div><strong>Ingenuity</strong><small class="mono">FTC #24220</small></div></div>
 <nav aria-label="Season sections" id="nav"></nav>
+<button class="sidebar-connection" id="session-action" type="button">Connect GitHub (token)</button>
 <div class="sidefoot mono">2026–27 / BIOBUZZ<br>TEAM WORKSPACE</div>
 </aside>
 <main>
@@ -130,7 +137,6 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
 <p id="notice" role="status"></p>
 <section class="panel connection" aria-label="Private GitHub tracker">
   <div class="row"><p id="session-status" role="status">Use New entry to draft an issue, or Open tracker to edit existing issues on GitHub.</p><div class="tools">
-    <button id="session-action" type="button">Connect GitHub (token)</button>
     <a href="https://github.com/jhwangt/ingenuity-season-data/issues">Open tracker ↗</a>
   </div></div>
 </section>
@@ -156,7 +162,7 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
 <label>Source, evidence or issue link<input name="source" type="url" maxlength="500" placeholder="https://…"></label>
 <label>Updated by<input name="by" maxlength="100" placeholder="Name or initials"></label>
 <label class="check"><input name="tentative" type="checkbox"> Tentative · confirm with the team</label>
-<p id="draft-help" class="muted" hidden>Review your draft on GitHub, then click Create to save it. Draft fields are passed in the link. Enter confidential details directly in GitHub.</p>
+<p id="draft-help" class="muted" hidden>Review your draft in the new GitHub window, then click Create to save it. Draft fields are passed in the link. Enter confidential details directly in GitHub.</p>
 <p id="form-error" role="alert"></p><div class="row"><button type="button" id="cancel">Cancel</button><button class="primary" type="submit" id="save">Save entry</button></div>
 </form></dialog>
 <script src="github-records.js?v=2"></script>
@@ -310,7 +316,15 @@ form.onsubmit=async event=>{
     const record={...values,id:editing?.id||crypto.randomUUID(),revision:editing?.revision||0};
     if (!token) {
       const draft=makeGitHubDraft(record);
-      window.location.assign(draft);
+      window.open(draft,'_blank','popup,noopener,noreferrer,width=980,height=820');
+      editor.close();
+      $('#notice').textContent='Review and create your draft in the GitHub window.';
+      const retry=document.createElement('a');
+      retry.href=draft;
+      retry.target='_blank';
+      retry.rel='noopener noreferrer';
+      retry.textContent=' Open draft again ↗';
+      $('#notice').append(retry);
       return;
     }
     const saved=await save(record);
