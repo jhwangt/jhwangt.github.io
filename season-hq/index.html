@@ -128,6 +128,15 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
 .hero-links a { color: #ffb8bb; }
 .workspace { margin: 16px 0 24px; }
 .workspace p { margin: 6px 0; }
+
+.issue-board { display: grid; gap: 18px; }
+.issue-board-header { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 12px; }
+.issue-board-header .tracker-actions { margin-top: 0; }
+.issue-views { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 165px), 1fr)); gap: 10px; }
+.issue-view { display: block; color: var(--ink); padding: 12px; border: 1px solid var(--edge); border-radius: 6px; text-decoration: none; }
+.issue-view:hover { border-color: var(--red); }
+.issue-view strong { display: block; color: var(--red); }
+.issue-view span { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; }
 </style>
 <div class="shell">
   <aside>
@@ -170,21 +179,31 @@ const legacy = {Robot:'Design',Autonomous:'Control',Outreach:'Reach'};
 const $ = selector => document.querySelector(selector);
 const titleFor = name => Object.hasOwn(awards,name) ? name + ' Award' : (operations[name]?.title || name);
 const anchorFor = name => '#' + encodeURIComponent(name);
-const issueQuery = (label, recent=false) => repo + '/issues?q=' + encodeURIComponent(
-  'is:issue' + (label ? ' label:"' + label + '"' : '') + (recent ? ' sort:updated-desc' : '')
-);
+function issueQuery(label, filter='') {
+  const query = ['is:issue', label ? 'label:"'+label+'"' : '', filter].filter(Boolean).join(' ');
+  return repo + '/issues?q=' + encodeURIComponent(query);
+}
 function newIssue(label, body) {
   return repo + '/issues/new?' + new URLSearchParams({labels:label,body});
 }
-function trackerLinks(label, body) {
-  return '<div class="tracker-actions"><a class="primary" href="'+issueQuery(label)+'">View '+label+' issues</a><a href="'+newIssue(label,body)+'">Create issue in GitHub</a></div>';
+function issueBoard(label='', body='') {
+  const action = label
+    ? '<a class="primary" href="'+newIssue(label,body)+'">＋ New '+(label==='Meeting'?'meeting log':'issue')+' on GitHub</a>'
+    : '<a class="primary" href="'+repo+'/issues">Open private team tracker</a>';
+  const views = [
+    ['Open issues','Work still on the board','state:open'],
+    ['Recently updated issues','Latest team activity','sort:updated-desc'],
+    ['Closed issues','Completed and closed work','state:closed']
+  ];
+  return '<section class="panel workspace issue-board"><div class="issue-board-header"><div><h2>Issue tracker</h2><p class="muted">Open a view to read or edit issues with your GitHub account.</p></div><div class="tracker-actions">'+action+'</div></div>'+
+    '<div class="issue-views">'+views.map(([title,description,filter])=>'<a class="issue-view" href="'+issueQuery(label,filter)+'"><strong>'+title+' ↗</strong><span>'+description+'</span></a>').join('')+'</div></section>';
 }
 function hero(title, description, more='') {
   return '<section class="hero"><div><span class="label">Team Ingenuity / BIOBUZZ</span><h1>'+title+'</h1><p>'+description+'</p>'+more+'</div></section>';
 }
 function overview() {
   return '<section class="hero hero-home"><div class="hero-copy"><span class="label">2026–27 FIRST Tech Challenge</span><h1>BIOBUZZ<br>Season HQ</h1><p>Team Ingenuity’s workspace for award evidence, season planning, and follow-ups.</p></div><img class="hero-logo" src="'+logo+'" width="577" height="552" alt="Team Ingenuity logo"></section>'+
-    '<section class="panel workspace"><h2>Private team tracker</h2><p class="muted">Sign in to GitHub with an invited account to view, create, and update shared records.</p><div class="tracker-actions"><a class="primary" href="'+repo+'/issues">Open private team tracker</a><a href="'+issueQuery('',true)+'">Recently updated issues</a></div></section>'+
+    issueBoard()+
     '<h2>Judged awards</h2><div class="award-grid">'+Object.entries(awards).map(([name,description])=>'<article class="card"><a href="'+anchorFor(name)+'">'+titleFor(name)+'</a><p>'+description+'</p></article>').join('')+'</div>';
 }
 function render() {
@@ -205,8 +224,10 @@ function render() {
   const sources = award ? '<div class="hero-links"><a href="'+manual+'">FIRST award criteria ↗</a></div>'
     : section === 'Rules' ? '<div class="hero-links"><a href="https://ftc-resources.firstinspires.org/ftc/archive/2027/game">BIOBUZZ season materials ↗</a> · <a href="https://ftc-qa.firstinspires.org/">Official FTC Q&amp;A ↗</a></div>'
     : '';
-  const template = section === 'Meetings' ? meetingTemplate : section === 'Events' ? eventTemplate : section === 'Rules' ? rulesTemplate : entryTemplate;
-  $('#view').innerHTML = hero(titleFor(section),description,sources)+'<section class="panel workspace"><h2>Team records</h2><p class="muted">View or update records in the private GitHub tracker. Apply the '+label+' label so the issue appears in this view.</p>'+trackerLinks(label,template)+'</section>';
+  const templates = {Meetings:meetingTemplate, Events:eventTemplate, Rules:rulesTemplate,
+    Control:'## Routine or issue\n\n## Robot setup and Pedro Pathing version\n\n## Reproduction steps\n\n## Expected and actual results\n\n## Telemetry or evidence\n\n## Owner, due date, and next action',
+    Reach:'## Activity and audience\n\n## What the team did\n\n## Participation and impact\n\n## Evidence and follow-up'};
+  $('#view').innerHTML = hero(titleFor(section),description,sources)+issueBoard(label,templates[section]||entryTemplate);
 }
 $('#nav').innerHTML = names.map(name =>
   (name==='Inspire'?'<div class="nav-heading mono">Judged awards</div>':name==='Goals'?'<div class="nav-heading mono">Team operations</div>':'')+
