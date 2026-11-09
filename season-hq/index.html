@@ -145,8 +145,9 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
 <dialog id="session-dialog" aria-labelledby="session-title">
   <form id="session-form">
     <div class="row"><h2 id="session-title">Connect to private issues</h2><button type="button" id="close-session" aria-label="Close GitHub connection form">×</button></div>
-    <p class="muted">Use your own fine-grained GitHub token for ingenuity-season-data with Issues read and write. It stays in memory until you disconnect or reload.</p>
+    <p class="muted">Use your own fine-grained GitHub token for ingenuity-season-data with Issues read and write. By default, it stays in memory until you reload. On a trusted device, you can remember it in this tab to load GitHub issues automatically.</p>
     <label>GitHub token<input name="token" type="password" autocomplete="off" spellcheck="false" required></label>
+    <label class="check"><input name="remember" type="checkbox"> Remember in this tab</label>
     <p id="connect-error" role="alert"></p>
     <button class="primary" type="submit">Connect GitHub</button>
   </form>
@@ -165,7 +166,7 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
 <p id="draft-help" class="muted" hidden>Review your draft in the new GitHub window, then click Create to save it. Draft fields are passed in the link. Enter confidential details directly in GitHub.</p>
 <p id="form-error" role="alert"></p><div class="row"><button type="button" id="cancel">Cancel</button><button class="primary" type="submit" id="save">Save entry</button></div>
 </form></dialog>
-<script src="github-records.js?v=2"></script>
+<script src="github-records.js?v=3"></script>
 <script>
 const awardNames = ['Inspire','Think','Connect','Reach','Sustain','Design','Innovate','Control','Judges’ Choice'];
 const sections = ['Overview','Events','Meetings','Goals','Rules',...awardNames];

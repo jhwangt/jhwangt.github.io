@@ -1,5 +1,6 @@
 'use strict';
 
+const sessionKey = 'ingenuity-season-hq-token';
 const tracker = 'https://api.github.com/repos/jhwangt/ingenuity-season-data';
 const operationLabels = {Goals:'Goals', Rules:'Rules', Events:'Event prep', Meetings:'Meeting'};
 const marker = /\n\n<!-- season-hq:v1:([A-Za-z0-9+/=]+) -->\s*$/;
@@ -131,6 +132,15 @@ function openSession() {
   $('#session-dialog').showModal();
 }
 
+function rememberedToken(value) {
+  try {
+    if (value===undefined) return sessionStorage.getItem(sessionKey) || '';
+    if (value) sessionStorage.setItem(sessionKey,value);
+    else sessionStorage.removeItem(sessionKey);
+  } catch { /* Keep working in memory if browser storage is unavailable. */ }
+  return '';
+}
+
 function initializeGitHubSession() {
   const dialog=$('#session-dialog');
   const connectionForm=$('#session-form');
@@ -142,16 +152,43 @@ function initializeGitHubSession() {
   action.onclick=()=>{
     if(!token){openSession();return;}
     if(activeWrites || refreshing)return;
+    rememberedToken('');
     token='';issueIndex.clear();online=false;records=seeds;editing=null;
     action.textContent='Connect GitHub (token)';
     $('#session-status').textContent='Disconnected. Starter entries are shown.';
     $('#notice').textContent='';
     render();
   };
+  async function connect(credential, remember) {
+    const repository=await github('',credential);
+    if(!repository.private || repository.full_name!=='jhwangt/ingenuity-season-data'){
+      throw Error('This connection requires the private Ingenuity repository.');
+    }
+    token=credential;
+    await refresh();
+    if(!online)throw Error($('#notice').textContent);
+    rememberedToken(remember ? credential : '');
+    action.textContent='Disconnect GitHub';
+    $('#session-status').textContent='Connected to the private GitHub tracker.';
+  }
+
+  const saved=rememberedToken();
+  if (saved) {
+    action.disabled=true;
+    $('#session-status').textContent='Loading private GitHub records…';
+    connect(saved,true).catch(error=>{
+      rememberedToken('');
+      token='';issueIndex.clear();online=false;
+      $('#session-status').textContent='Could not restore the GitHub connection. Connect with your token to load private records.';
+      $('#notice').textContent=error.message;
+    }).finally(()=>{action.disabled=false;});
+  }
+
   connectionForm.onsubmit=async event=>{
     event.preventDefault();
     if(submit.disabled)return;
     const credential=connectionForm.elements.token.value.trim();
+    const remember=connectionForm.elements.remember.checked;
     connectionForm.reset();
     if(!/^github_pat_[A-Za-z0-9_]+$/.test(credential)){
       $('#connect-error').textContent='Enter a fine-grained GitHub token.';
@@ -160,15 +197,7 @@ function initializeGitHubSession() {
     submit.disabled=true;
     $('#connect-error').textContent='';
     try{
-      const repository=await github('',credential);
-      if(!repository.private || repository.full_name!=='jhwangt/ingenuity-season-data'){
-        throw Error('This connection requires the private Ingenuity repository.');
-      }
-      token=credential;
-      await refresh();
-      if(!online)throw Error($('#notice').textContent);
-      action.textContent='Disconnect GitHub';
-      $('#session-status').textContent='Connected to the private GitHub tracker.';
+      await connect(credential,remember);
       dialog.close();
     }catch(error){
       token='';issueIndex.clear();
