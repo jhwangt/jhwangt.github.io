@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-G5b4RppgYYsK3CCaMC9YYXyskUQZL/8zGTK2tH0ftjo='; style-src 'unsafe-inline'; img-src data:; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-H6GfiTO7sd+wAkkSrplfQHNMlIMY634XMR5p9fGrtk0='; style-src 'unsafe-inline'; img-src data:; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
 <title>Season HQ · Team Ingenuity</title>
 <style>
 :root {
@@ -133,7 +133,7 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
 <div class="sidefoot mono">2026–27 / BIOBUZZ<br>TEAM WORKSPACE</div>
 </aside>
 <main>
-<div class="top"><div class="mono">Season HQ <span aria-hidden="true">/</span> <span id="crumb">Overview</span></div><div class="tools"><button id="refresh">Refresh</button><button class="primary" id="add">＋ New entry</button></div></div>
+<div class="top"><div class="mono">Season HQ <span aria-hidden="true">/</span> <span id="crumb">Overview</span></div><div class="tools"><button class="primary" id="add">＋ New entry</button></div></div>
 <p id="notice" role="status"></p>
 <section class="panel connection" aria-label="Private GitHub tracker">
   <div class="row"><p id="session-status" role="status">Use New entry to draft an issue, or Open tracker to edit existing issues on GitHub.</p><div class="tools">
@@ -336,7 +336,6 @@ form.onsubmit=async event=>{
 $('#add').onclick=()=>openEditor(null,section==='Overview'?'Goals':section);
 $('#close').onclick=$('#cancel').onclick=()=>{if(!saving)editor.close();};
 editor.addEventListener('cancel',event=>{if(saving)event.preventDefault();});
-$('#refresh').onclick=()=>token?refresh():openSession();
 document.addEventListener('click',event=>{
   const btn=event.target.closest('button');
   if(btn?.dataset.section){location.hash=encodeURIComponent(btn.dataset.section);navigate(btn.dataset.section);}
