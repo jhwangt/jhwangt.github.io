@@ -84,6 +84,12 @@ h3 { margin: 0; font-size: 28px; line-height: 1.2; }
 .coaching-layout, .about-layout { display: grid; grid-template-columns: minmax(240px, .8fr) minmax(0, 1fr); gap: 100px; }
 .coaching-copy p, .about-layout p { margin: 0; max-width: 620px; font-size: 19px; line-height: 1.7; }
 .coaching-copy .quiet { margin-top: 20px; color: var(--muted); font-size: 15px; }
+.coaching-team { display: grid; grid-template-columns: clamp(72px, 12vw, 120px) minmax(0, 1fr); align-items: center; gap: clamp(12px, 3vw, 24px); padding: 18px; margin-top: 24px; background: #fff; border: 1px solid var(--line); border-top: 3px solid #b80009; border-radius: 6px; }
+.coaching-team img { width: 100%; height: auto; background: #191717; padding: 6px; border-radius: 4px; }
+.coaching-team h3 { font-size: clamp(18px, 2.3vw, 23px); }
+.coaching-team .quiet { margin: 6px 0 12px; }
+.coaching-team .primary-link { background: #b80009; }
+.coaching-team .primary-link:hover { background: #960007; }
 .about-layout .text-link { display: inline-block; margin-top: 25px; }
 .site-footer { border-top: 1px solid var(--line); }
 .footer-inner { min-height: 84px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 32px; color: var(--muted); font-size: 13px; }
