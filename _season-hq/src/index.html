@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Season HQ · Team Ingenuity</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f5f4f3;
+  --panel: #fff;
+  --edge: #dedbd8;
+  --ink: #191717;
+  --muted: #665e5c;
+  --red: #b80009;
+  --tint: #fcebec;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 system-ui, sans-serif; }
+button, input, select, textarea { font: inherit; }
+button, a, input, textarea, select { outline-offset: 4px; }
+:focus-visible { outline: 3px solid #ce4147; }
+button {
+  cursor: pointer; color: inherit; background: var(--panel); border: 1px solid var(--edge);
+  padding: 9px 14px; border-radius: 6px; font-weight: 650;
+}
+button:hover { border-color: var(--red); }
+a { color: var(--red); text-underline-offset: 3px; }
+.shell { display: grid; grid-template-columns: 236px minmax(0,1fr); min-height: 100vh; }
+aside {
+  background: #181616; color: white; padding: 26px 16px; position: sticky;
+  top: 0; height: 100vh; border-right: 1px solid #352d2d;
+}
+.brand { display: flex; align-items: center; gap: 12px; margin: 0 7px 32px; }
+.brand strong { display: block; line-height: 1.2; font-size: 18px; }
+.mark {
+  display: grid; place-items: center; width: 43px; height: 43px; border-radius: 7px;
+  background: #c7000b; color: white; font: 850 23px/1 system-ui, sans-serif;
+}
+.mono, .label, .badge {
+  font: 750 11px/1.4 ui-monospace, monospace; letter-spacing: .085em; text-transform: uppercase;
+}
+.muted, .mono { color: var(--muted); }
+aside .mono { color: #c4b9b9; }
+nav { display: grid; gap: 5px; }
+nav button { text-align: left; background: none; border-color: transparent; color: #e5dddd; }
+nav button[aria-current=page] { color: white; background: #482023; border-color: #a74347; }
+nav span { display: inline-block; width: 26px; }
+.sidefoot { position: absolute; bottom: 25px; left: 24px; }
+main { width: 100%; max-width: 1320px; margin-inline: auto; padding: 28px clamp(18px,4vw,52px) 60px; }
+.top, .row, .tools, .heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.top { margin-bottom: 20px; }
+.primary { background: var(--red); color: white; border-color: var(--red); }
+.primary:hover { background: #960007; }
+.hero {
+  border: 1px solid #3d2b2b; border-radius: 13px; overflow: hidden; position: relative;
+  padding: clamp(22px,4vw,44px); color: white;
+  background: linear-gradient(115deg,#171515 44%,#3c181b 100%);
+}
+.hero-home { display: grid; grid-template-columns: minmax(0,1fr) minmax(125px,270px); align-items: center; gap: 22px; }
+.hero-copy { max-width: 570px; }
+.hero-logo { display: block; width: 100%; max-height: 242px; object-fit: contain; }
+.hero p { margin: 12px 0 0; color: #e1d8d8; max-width: 52ch; }
+.label { color: #ff969a; }
+h1 { font-size: clamp(34px,5.3vw,66px); letter-spacing: -.06em; line-height: 1; margin: 10px 0; }
+h2 { letter-spacing: -.035em; margin: 0; font-size: 24px; }
+h3 { margin: 8px 0 4px; font-size: 17px; }
+.stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin: 16px 0 28px; }
+.tile, .card, .panel { background: var(--panel); border: 1px solid var(--edge); border-radius: 9px; padding: 16px; }
+.tile strong { display: block; font-size: 28px; line-height: 1.2; }
+.tile small { color: var(--muted); }
+.cols { display: grid; grid-template-columns: minmax(0,1.65fr) minmax(250px,1fr); gap: 16px; }
+.heading { margin-bottom: 12px; }
+.list { display: grid; gap: 10px; }
+.card p { margin: 7px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.card button { font-size: 12px; padding: 5px 9px; }
+.badge { display: inline-block; border-radius: 4px; padding: 5px 8px; background: #eeecea; color: #4f4643; letter-spacing: .02em; }
+.badge.tentative { color: #734412; background: #fff0d7; }
+.badge.done { color: #245b3f; background: #e2f1e8; }
+.badge.blocked { color: #9c1018; background: var(--tint); }
+.panel ul { padding-left: 18px; margin-bottom: 0; }
+.panel li { margin-bottom: 9px; }
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0; }
+.toolbar input { flex: 1; min-width: 175px; }
+input, select, textarea { color: var(--ink); background: var(--panel); border: 1px solid #bdb5b2; border-radius: 6px; padding: 9px 11px; max-width: 100%; }
+textarea { min-height: 150px; resize: vertical; }
+dialog { width: min(650px,calc(100% - 24px)); max-height: 90vh; background: var(--panel); color: var(--ink); border: 1px solid var(--edge); border-radius: 12px; padding: 22px; }
+dialog::backdrop { background: #171515a8; }
+form, label { display: grid; gap: 10px; }
+label { gap: 5px; }
+label.check { display: flex; align-items: center; }
+form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
+#notice, #form-error { color: #8d1520; margin: 0 0 10px; }
+#notice:empty, #form-error:empty { display: none; }
+.fresh { border-left: 4px solid var(--red); }
+.empty { color: var(--muted); padding: 12px 0; }
+.checkline { display: flex; align-items: center; gap: 6px; }
+.checkline input { accent-color: var(--red); }
+@media (max-width: 800px) {
+  .shell { display: block; }
+  aside { position: static; height: auto; padding: 12px; border-right: 0; }
+  .brand { margin: 0 0 8px; }
+  nav { display: flex; overflow: auto; }
+  nav button { white-space: nowrap; }
+  nav span, .sidefoot { display: none; }
+  .cols { grid-template-columns: 1fr; }
+}
+@media (max-width: 500px) {
+  .stats { grid-template-columns: 1fr 1fr; }
+  .hero-home { grid-template-columns: minmax(0,1fr); }
+  .hero-logo { max-height: 145px; width: auto; max-width: 100%; justify-self: start; }
+}
+</style>
+<div class="shell">
+<aside>
+<div class="brand"><div class="mark" aria-hidden="true">I</div><div><strong>Ingenuity</strong><small class="mono">FTC #24220</small></div></div>
+<nav aria-label="Season sections" id="nav"></nav>
+<div class="sidefoot mono">2026–27 / BIOBUZZ<br>TEAM WORKSPACE</div>
+</aside>
+<main>
+<div class="top"><div class="mono">Season HQ <span aria-hidden="true">/</span> <span id="crumb">Overview</span></div><div class="tools"><button id="refresh">Refresh</button><button class="primary" id="add">＋ New entry</button></div></div>
+<p id="notice" role="status"></p>
+<div id="view"></div>
+</main></div>
+<dialog id="editor" aria-labelledby="editor-title"><form id="form">
+<div class="row"><h2 id="editor-title">New entry</h2><button type="button" id="close" aria-label="Close editor">✕</button></div>
+<div class="pair"><label>Section<select name="category" id="category"></select></label><label>Status<select name="status" id="status"></select></label></div>
+<label>Title<input name="title" required maxlength="140"></label>
+<div class="pair"><label>Owner or role<input name="owner" maxlength="100" placeholder="Unassigned"></label><label>Due date / meeting date<input name="due" type="date"></label></div>
+<label id="notes-label">Notes<textarea name="notes" maxlength="8000"></textarea></label>
+<label>Next action<input name="next" maxlength="500"></label>
+<label>Source, evidence or issue link<input name="source" type="url" maxlength="500" placeholder="https://…"></label>
+<label>Updated by<input name="by" maxlength="100" placeholder="Name or initials"></label>
+<label class="check"><input name="tentative" type="checkbox"> Tentative · confirm with the team</label>
+<p id="form-error" role="alert"></p><div class="row"><button type="button" id="cancel">Cancel</button><button class="primary" type="submit" id="save">Save entry</button></div>
+</form></dialog>
+<script>
+const sections = ['Overview','Goals','Rules','Robot','Autonomous','Outreach','Events','Meetings'];
+const statusList = ['Planned','In progress','Blocked','Done'];
+const names = {Overview:'Overview',Goals:'Goals & ownership',Rules:'Rules & clarifications',Robot:'Robot build',Autonomous:'Autonomous lab',Outreach:'Outreach & fundraising',Events:'Event prep',Meetings:'Meeting log'};
+const descriptions = {Goals:'Set season outcomes, assign leads, and confirm what success looks like.',Rules:'Search rule IDs, topics, sources, and team interpretations. Check FIRST for the latest official ruling.',Robot:'Track CAD, prototypes, fabrication, and tests. Add evidence and the next build decision.',Autonomous:'Record tuning experiments and Pedro Pathing issues, including what changed and what the robot did.',Outreach:'Track outreach activities, sponsor conversations, and fundraising follow-ups.',Events:'Check off inspection, pit, judging, and drive-team tasks. Add an event name to task titles when reusing the checklist.',Meetings:'Record decisions, mark completed meetings, and assign follow-ups as entries with owners and due dates.'};
+const manual = 'https://ftc-resources.firstinspires.org/ftc/game';
+const seeds = [
+['Goals','Build a reliable match robot','Zilong · CAD lead','Define success with repeatable cycle and reliability tests. Confirm the build lead and target before committing.','Agree on first prototype test'],
+['Goals','Run a repeatable autonomous routine','Programming lead','Choose a baseline routine, record completion rate, and define the fallback path.','Agree on a minimum success rate'],
+['Goals','Document outreach and fund the season','Elaine and Sherry · outreach co-leads','Build on Ingenuity’s public commitment to community outreach and open-source code. Confirm a fundraising owner, funding target, and outreach target.','Confirm budget and outreach targets','https://ingenuity.team/'],
+['Goals','Keep team decisions and handoffs current','Erik and Nathan · team co-captains','Starting roster from the team site: Coach Dai (head coach), Coach Wan (assistant coach), Mentor Ni (hardware mentor), and Max (outreach specialist). Confirm assignments for BIOBUZZ.','Confirm season owners at the next meeting','https://ingenuity.team/'],
+['Rules','BIOBUZZ competition manual and Team Updates','','Official FIRST resource index for the current manual, revisions, and game materials. Record a rule ID and revision when saving a team interpretation.','',manual,false],
+['Rules','Official FTC Team Q&A','','Use the official forum to check clarifications. Add the question ID and a link when a ruling affects the robot or strategy.','','https://ftc-qa.firstinspires.org/',false],
+['Rules','Review robot inspection and starting configuration','Build lead','Open review. Record the relevant rule ID, manual revision, and the implication for CAD.','Assign an inspection reviewer',manual],
+['Robot','Select a mechanism to prototype','Zilong · CAD lead','Capture the design goal, CAD link, tradeoffs, build stage, and prototype test criteria.','Run a design review'],
+['Robot','Review drivetrain and wiring layout','Electrical lead','Check service access, routing, strain relief, and component mounting.','Add annotated CAD or a wiring photo'],
+['Autonomous','Pedro Pathing · localization baseline','Programming lead','Investigation template. Record library version, localizer, test conditions, commanded motion, measured pose error, and repeat count.','Run straight, lateral, and turn checks','https://pedropathing.com/docs/pathing/tuning'],
+['Autonomous','Pedro Pathing · path completion issue log','Programming lead','Possible checks for a future issue: initial pose, endpoint error, timeout, and follower state. Record symptoms, reproduction steps, expected behavior, and actual telemetry.','Capture a repeatable test before changing gains','https://pedropathing.com/docs/pathing/faq'],
+['Outreach','Plan a community demo','Elaine and Sherry · outreach co-leads','Confirm partner, date, audience, materials, volunteer coverage, and impact metrics.','Identify a host'],
+['Outreach','Build a sponsor follow-up list','Fundraising lead','Record sponsor, ask, pledged and received amounts, and the next contact date in separate entries.','Draft a sponsor packet'],
+['Events','Confirm registration, travel and arrival','Coach / logistics lead','Confirm venue, schedule, roster, transport, and consent forms with the event organizer.',''],
+['Events','Run mock inspection','Build lead','Check the current official inspection materials and resolve open issues.','',manual],
+['Events','Pack pit kit and spares','Pit lead','Charge batteries. Pack chargers, tools, fasteners, laptop, cables, and backups.',''],
+['Events','Rehearse judging and drive-team roles','Drive coach','Practice portfolio handoff, pit interview, match setup, and fallback auto selection.','']
+].map(([category,title,owner,notes,next,source='',tentative=true], i)=>({id:'starter-'+i,category,title,owner,notes,next,source,tentative,status:'Planned',due:'',by:'',revision:0}));
+const $ = selector => document.querySelector(selector);
+const esc = value => String(value ?? '').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const editor = $('#editor'), form = $('#form');
+const template = 'Attendance\n\nUpdates since last meeting\n\nDecisions\n\nBlockers\n\nFollow-ups (owner and due date)\n\nNext meeting';
+let records = seeds, section = 'Overview', query='', filter='', editing, online=false, saving=false;
+const symbols = ['◈','◎','▤','⚙','⌁','◇','✓','◷'];
+$('#nav').innerHTML = sections.map((s,i)=>'<button data-section="'+s+'"><span aria-hidden="true">'+symbols[i]+'</span>'+names[s]+'</button>').join('');
+$('#category').innerHTML = sections.slice(1).map(s=>'<option value="'+s+'">'+names[s]+'</option>').join('');
+$('#status').innerHTML = statusList.map(s=>'<option>'+s+'</option>').join('');
+function date(value){ return value ? new Date(value.length===10?value+'T12:00:00':value).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : ''; }
+function card(r){
+  const source = /^https?:\/\//i.test(r.source) ? '<a target="_blank" rel="noopener noreferrer" href="'+esc(r.source)+'">Open source ↗</a>' : '';
+  const check = r.category==='Events' ? '<label class="checkline"><input type="checkbox" data-check="'+r.id+'" '+(r.status==='Done'?'checked':'')+' aria-label="Complete '+esc(r.title)+'"> Complete</label>' : '';
+  return '<article class="card"><div class="row"><div><span class="badge '+(r.status==='Done'?'done':r.status==='Blocked'?'blocked':'')+'">'+esc(r.status)+'</span> '+(r.tentative?'<span class="badge tentative">Tentative</span>':'')+'</div><button data-edit="'+r.id+'" aria-label="Edit '+esc(r.title)+'">Edit</button></div><h3>'+esc(r.title)+'</h3><div class="muted">'+esc(r.owner||'Unassigned')+(r.due?' · '+(r.category==='Meetings'?'Met ':'Due ')+esc(date(r.due)):'')+'</div><p>'+esc(r.notes)+'</p>'+(r.next?'<p><strong>Next</strong> '+esc(r.next)+'</p>':'')+'<div class="row">'+source+check+(r.updated?'<small class="muted">Updated '+esc(date(r.updated))+(r.by?' · '+esc(r.by):'')+'</small>':'')+'</div></article>';
+}
+function list(items){return items.length?items.map(card).join(''):'<p class="empty">No entries match this view.</p>';}
+function overview(){
+  const goals = records.filter(r=>r.category==='Goals');
+  const recent = records.filter(r=>r.updated).sort((a,b)=>b.updated.localeCompare(a.updated));
+  const meetings = records.filter(r=>r.category==='Meetings' && r.status==='Done' && r.due).sort((a,b)=>b.due.localeCompare(a.due));
+  const last = meetings[0];
+  const after = recent.filter(r=>r.category!=='Meetings' && (!last || r.updated.slice(0,10)>=last.due));
+  const tasks = records.filter(r=>r.next && r.status!=='Done').sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
+  const tile = (number,label)=>'<div class="tile"><strong>'+number+'</strong><small>'+label+'</small></div>';
+  return '<section class="hero hero-home"><div class="hero-copy"><span class="label">2026–27 FIRST Tech Challenge</span><h1>BIOBUZZ<br>Season HQ</h1><p>Team Ingenuity’s shared workspace for the robot, the season, and every follow-up.</p></div><img class="hero-logo" src="__INGENUITY_LOGO__" width="577" height="552" alt="Team Ingenuity logo"></section><div class="stats">'+tile(goals.length,'Season goals')+tile(records.filter(r=>r.status==='In progress').length,'In progress')+tile(records.filter(r=>r.status==='Blocked').length,'Blocked')+tile(after.length,last?'Updated since meeting':'Updated entries')+'</div><div class="cols"><section><div class="heading"><h2>Season goals</h2><button data-section="Goals">All goals →</button></div><div class="list">'+list(goals.slice(0,4))+'</div></section><section class="list" style="align-content:start"><div class="panel fresh"><h2>Since last meeting</h2><p class="muted">'+(last?'Showing updates from '+esc(date(last.due))+' onward.':'Showing recent updates until a dated meeting is marked Done.')+'</p>'+(after.length?'<ul>'+after.slice(0,8).map(r=>'<li><button data-edit="'+r.id+'">'+esc(r.title)+'</button><br><small class="muted">'+esc(r.status)+' · '+esc(date(r.updated))+'</small></li>').join('')+'</ul>':'<p class="empty">No changes to review yet.</p>')+'</div><div class="panel"><h2>Follow-ups</h2><ul>'+tasks.slice(0,6).map(r=>'<li><button data-edit="'+r.id+'">'+esc(r.next)+'</button><br><small class="muted">'+esc(r.owner||'Unassigned')+(r.due?' · '+esc(date(r.due)):'')+'</small></li>').join('')+'</ul></div></section></div>';
+}
+function filtered(){
+  const terms=query.toLowerCase().trim().split(/\s+/);
+  const matches=records.filter(r=>r.category===section && (!filter||r.status===filter) && terms.every(term=>[r.title,r.notes,r.owner,r.source,r.next].join(' ').toLowerCase().includes(term)));
+  if(section==='Meetings') matches.sort((a,b)=>(b.due||'').localeCompare(a.due||''));
+  $('#items').innerHTML=list(matches);
+}
+function render(){
+  $('#crumb').textContent=names[section];
+  $('#nav').querySelectorAll('button').forEach(b=>b.dataset.section===section?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current'));
+  if(section==='Overview'){$('#view').innerHTML=overview();return;}
+  $('#view').innerHTML='<section class="hero"><div><span class="label">Team Ingenuity / Season HQ</span><h1>'+names[section]+'</h1><p>'+descriptions[section]+'</p></div></section><div class="toolbar"><input id="query" type="search" aria-label="Search this section" placeholder="'+(section==='Rules'?'Search rule ID, topic, or clarification…':'Search this section…')+'"><select id="filter" aria-label="Filter by status"><option value="">All statuses</option>'+statusList.map(s=>'<option>'+s+'</option>').join('')+'</select>'+(section==='Meetings'?'<button id="template">＋ Use meeting template</button>':'')+'</div><div class="list" id="items"></div>';
+  $('#query').value=query; $('#filter').value=filter;
+  $('#query').oninput=e=>{query=e.target.value;filtered();};
+  $('#filter').onchange=e=>{filter=e.target.value;filtered();};
+  if($('#template')) $('#template').onclick=()=>openEditor(null,'Meetings',true);
+  filtered();
+}
+function navigate(target){
+  section=sections.includes(target)?target:'Overview'; query=''; filter=''; render();
+}
+function openEditor(record, category, useTemplate=false){
+  editing=record;
+  form.reset();
+  form.elements.category.value=record?.category||category;
+  form.elements.status.value=record?.status||'Planned';
+  for(const key of ['title','owner','due','notes','next','source','by']) form.elements[key].value=record?.[key]||'';
+  form.elements.tentative.checked=record?.tentative??false;
+  if(useTemplate){form.elements.title.value='Team meeting';form.elements.notes.value=template; const now=new Date();now.setMinutes(now.getMinutes()-now.getTimezoneOffset());form.elements.due.value=now.toISOString().slice(0,10);}
+  $('#editor-title').textContent=record?'Edit entry':'New entry';
+  $('#form-error').textContent='';
+  editor.showModal();
+}
+async function refresh(){
+  try {
+    const res=await fetch('/api/records');
+    if(!res.ok) throw Error('Shared storage is temporarily unavailable. Starter entries are visible while you reconnect.');
+    const remote=await res.json();
+    const map=new Map(seeds.map(r=>[r.id,r]));
+    for(const r of remote) map.set(r.id,r);
+    records=[...map.values()];online=true;$('#notice').textContent='';render();
+  }catch(e){online=false;$('#notice').textContent=e.message;}
+}
+async function save(record){
+  if(!online) throw Error('Shared storage is offline. Refresh the page connection and try again.');
+  const res=await fetch('/api/records',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(record)});
+  const data=await res.json();
+  if(!res.ok)throw Error(data.error||'Unable to save.');
+  records=[...records.filter(r=>r.id!==data.id),data];render();
+}
+form.onsubmit=async event=>{
+  event.preventDefault(); if(saving)return;
+  saving=true; $('#save').disabled=true; $('#form-error').textContent='';
+  try{
+    const values=Object.fromEntries(new FormData(form));values.tentative=form.elements.tentative.checked;
+    if(values.category==='Meetings'&&values.status==='Done'&&!values.due)throw Error('Set the meeting date before marking it Done.');
+    await save({...values,id:editing?.id||crypto.randomUUID(),revision:editing?.revision||0});
+    editor.close();$('#notice').textContent='Entry saved to the shared workspace.';
+  }catch(e){$('#form-error').textContent=e.message;}
+  finally{saving=false;$('#save').disabled=false;}
+};
+$('#add').onclick=()=>openEditor(null,section==='Overview'?'Goals':section);
+$('#close').onclick=$('#cancel').onclick=()=>{if(!saving)editor.close();};
+editor.addEventListener('cancel',event=>{if(saving)event.preventDefault();});
+$('#refresh').onclick=refresh;
+document.addEventListener('click',event=>{
+  const btn=event.target.closest('button');
+  if(btn?.dataset.section){location.hash=btn.dataset.section;navigate(btn.dataset.section);}
+  if(btn?.dataset.edit){const record=records.find(r=>r.id===btn.dataset.edit);if(record)openEditor(record);}
+});
+document.addEventListener('change',async event=>{
+  const control=event.target;
+  if(!control.dataset.check)return;
+  const record=records.find(r=>r.id===control.dataset.check);
+  control.disabled=true;
+  try{await save({...record,status:control.checked?'Done':'Planned'});$('#notice').textContent='Checklist updated.';}
+  catch(e){control.checked=!control.checked;$('#notice').textContent=e.message;}
+  finally{control.disabled=false;}
+});
+window.addEventListener('hashchange',()=>navigate(location.hash.slice(1)));
+navigate(location.hash.slice(1));refresh();
+</script>
+</html>
