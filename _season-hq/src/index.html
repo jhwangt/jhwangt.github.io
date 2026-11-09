@@ -90,6 +90,9 @@ label.check { display: flex; align-items: center; }
 form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
 #notice, #form-error { color: #8d1520; margin: 0 0 10px; }
 #notice:empty, #form-error:empty { display: none; }
+.connection { margin-bottom: 18px; }
+.connection p { margin: 0 0 10px; }
+.connection[hidden] { display: none; }
 .fresh { border-left: 4px solid var(--red); }
 .empty { color: var(--muted); padding: 12px 0; }
 .checkline { display: flex; align-items: center; gap: 6px; }
@@ -118,6 +121,11 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
 <main>
 <div class="top"><div class="mono">Season HQ <span aria-hidden="true">/</span> <span id="crumb">Overview</span></div><div class="tools"><button id="refresh">Refresh</button><button class="primary" id="add">＋ New entry</button></div></div>
 <p id="notice" role="status"></p>
+<section id="connection" class="panel connection" hidden aria-label="Connect to shared records">
+<p>Connect to the private team workspace to load and edit shared records. Keep the connection window open while you work.</p>
+<button class="primary" id="connect">Connect team workspace</button>
+<a href="https://ingenuity-24220-biobuzz.chivalrouspalm.chatgpt.site/" target="_blank" rel="noopener">Sign in to Season HQ</a>
+</section>
 <div id="view"></div>
 </main></div>
 <dialog id="editor" aria-labelledby="editor-title"><form id="form">
@@ -133,6 +141,7 @@ form .pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); 
 <p id="form-error" role="alert"></p><div class="row"><button type="button" id="cancel">Cancel</button><button class="primary" type="submit" id="save">Save entry</button></div>
 </form></dialog>
 <script>
+__SHARED_TRANSPORT__
 const sections = ['Overview','Goals','Rules','Robot','Autonomous','Outreach','Events','Meetings'];
 const statusList = ['Planned','In progress','Blocked','Done'];
 const names = {Overview:'Overview',Goals:'Goals & ownership',Rules:'Rules & clarifications',Robot:'Robot build',Autonomous:'Autonomous lab',Outreach:'Outreach & fundraising',Events:'Event prep',Meetings:'Meeting log'};
@@ -217,7 +226,7 @@ function openEditor(record, category, useTemplate=false){
 }
 async function refresh(){
   try {
-    const res=await fetch('/api/records');
+    const res=await requestRecords('GET');
     if(!res.ok) throw Error('Shared storage is temporarily unavailable. Starter entries are visible while you reconnect.');
     const remote=await res.json();
     const map=new Map(seeds.map(r=>[r.id,r]));
@@ -227,7 +236,7 @@ async function refresh(){
 }
 async function save(record){
   if(!online) throw Error('Shared storage is offline. Refresh the page connection and try again.');
-  const res=await fetch('/api/records',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(record)});
+  const res=await requestRecords('PUT', record);
   const data=await res.json();
   if(!res.ok)throw Error(data.error||'Unable to save.');
   records=[...records.filter(r=>r.id!==data.id),data];render();
@@ -262,6 +271,13 @@ document.addEventListener('change',async event=>{
   finally{control.disabled=false;}
 });
 window.addEventListener('hashchange',()=>navigate(location.hash.slice(1)));
-navigate(location.hash.slice(1));refresh();
+navigate(location.hash.slice(1));
+if (connectSharedRecords) {
+  $('#connection').hidden = false;
+  $('#connect').onclick = () => {
+    try { connectSharedRecords(); }
+    catch (error) { $('#notice').textContent = error.message; }
+  };
+} else refresh();
 </script>
 </html>

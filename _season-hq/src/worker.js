@@ -3,6 +3,13 @@ const statuses = ['Planned','In progress','Blocked','Done'];
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === '/connect' && request.method === 'GET') {
+      return new Response(connectHtml, {headers:{
+        'content-type':'text/html; charset=utf-8',
+        'cache-control':'no-store',
+        'content-security-policy':"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'"
+      }});
+    }
     if (url.pathname === '/' && request.method === 'GET') {
       return new Response(html, {headers:{'content-type':'text/html; charset=utf-8','x-content-type-options':'nosniff'}});
     }

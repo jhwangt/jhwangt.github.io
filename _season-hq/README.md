@@ -20,3 +20,7 @@ Push this folder to a private repository. Connect it to [Cloudflare Workers Buil
 - Check the deployed app with an allowed account and an unauthenticated browser before sharing it. Live records are stored in D1 and do not travel with the Git repository or source ZIP.
 
 For local use, run `node build.mjs`, `npx wrangler d1 migrations apply ingenuity-season --local`, then `npx wrangler dev`. Cloudflare needs its own D1 binding even if the app is already deployed on Sites.
+
+## GitHub Pages interface
+
+From `_season-hq`, run `node build.mjs ../season-hq/index.html` to regenerate the public interface. The GitHub Pages app opens a first-party connection window on the private Sites deployment. The window uses the visitor's Sites session for API requests and exchanges messages only with the published GitHub Pages origin. Access to the shared database is controlled by the private Site's visitor list.

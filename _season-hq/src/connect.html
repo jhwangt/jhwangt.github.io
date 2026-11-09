@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ingenuity · Team workspace connection</title>
+<style>
+body { font: 16px/1.55 system-ui,sans-serif; color: #191717; background: #f5f4f3; margin: 2rem; }
+h1 { font-size: 1.7rem; line-height: 1.15; }
+p:first-of-type { color: #b80009; font-weight: 700; }
+</style>
+<p>FTC #24220 · BIOBUZZ</p>
+<h1>Team workspace connection</h1>
+<p id="status">Keep this window open while you work on GitHub Pages.</p>
+<script>
+const coachingOrigin = 'https://jhwangt.github.io';
+const coachingWindow = window.opener;
+if (coachingWindow) {
+  window.addEventListener('message', async event => {
+    if (event.origin !== coachingOrigin || event.source !== coachingWindow) return;
+    const message = event.data;
+    if (message?.type !== 'ingenuity-request' || typeof message.id !== 'string' ||
+        !['GET','PUT'].includes(message.method)) return;
+    let status, body;
+    try {
+      const response = await fetch('/api/records', message.method === 'GET' ? {} : {
+        method:'PUT', headers:{'content-type':'application/json'}, body:JSON.stringify(message.record)
+      });
+      status = response.status;
+      body = JSON.stringify(await response.json());
+    } catch {
+      status = 503;
+      body = JSON.stringify({error:'Reconnect to the signed-in team workspace and try again.'});
+    }
+    coachingWindow.postMessage({type:'ingenuity-response', id:message.id, status, body}, coachingOrigin);
+  });
+  coachingWindow.postMessage({type:'ingenuity-ready'}, coachingOrigin);
+} else {
+  document.querySelector('#status').textContent = 'Return to Season HQ on GitHub Pages and select Connect team workspace.';
+}
+</script>
+</html>
