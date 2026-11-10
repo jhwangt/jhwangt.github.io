@@ -1,0 +1,37 @@
+{
+  "checked": "2026-11-09",
+  "issues": [
+    {
+      "title": "Confirm robot design and remaining mechanical work",
+      "status": "Open"
+    },
+    {
+      "title": "Finish essential hardware mechanisms",
+      "status": "Open"
+    },
+    {
+      "title": "Finalize CAD for current robot design",
+      "status": "Open"
+    },
+    {
+      "title": "Verify drivetrain and TeleOp controls",
+      "status": "Open"
+    },
+    {
+      "title": "Tune Pedro Pathing and get basic autonomous working",
+      "status": "Open"
+    },
+    {
+      "title": "Portfolio outline and documentation",
+      "status": "Open"
+    },
+    {
+      "title": "Review judging criteria and assign speaking topics",
+      "status": "Open"
+    },
+    {
+      "title": "Hold full-team progress review",
+      "status": "Open"
+    }
+  ]
+}
