@@ -1,0 +1,47 @@
+name: Publish Season HQ public issue summary
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/season-hq-summary.yml'
+      - '.github/scripts/season-hq-summary.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: season-hq-public-summary
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the public summary
+        env:
+          SEASON_HQ_ISSUES_READ_TOKEN: ${{ secrets.SEASON_HQ_ISSUES_READ_TOKEN }}
+        run: python3 .github/scripts/season-hq-summary.py "$RUNNER_TEMP/season-hq-summary.json"
+      - name: Publish the public summary branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=season-hq-public
+          remote_ref=$(git ls-remote --heads origin "refs/heads/$branch")
+          if [[ -n "$remote_ref" ]]; then
+            git fetch --no-tags origin "refs/heads/$branch"
+            git switch -c "$branch" FETCH_HEAD
+          else
+            git switch --orphan "$branch"
+          fi
+          cp "$RUNNER_TEMP/season-hq-summary.json" summary.json
+          git add summary.json
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m 'Update public Season HQ issue summary'
+          git push origin "HEAD:refs/heads/$branch"

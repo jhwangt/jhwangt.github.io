@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-ebNp4ZS9monHm/MzLjYR2p+FKGYcOIkFnuBl6jkBBNw='; style-src 'unsafe-inline'; img-src data:; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-W7aprf5tPXdT9klpGlJAQ7lxzFXVHZi09nSv+ED4rpQ='; style-src 'unsafe-inline'; img-src data:; connect-src https://api.github.com https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Season HQ · Team Ingenuity</title>
 <style>
 :root {
@@ -257,6 +257,21 @@ const seasonTimeline = [
   {date:'Jan 23, 2027', title:'Arlington VA Qualifier I', status:'Team listed',
     url:'https://ftc-events.firstinspires.org/2026/USCHSARQ1'}
 ];
+async function loadPublicSummary() {
+  const url='https://raw.githubusercontent.com/jhwangt/jhwangt.github.io/season-hq-public/summary.json';
+  try {
+    const response=await fetch(url,{cache:'no-cache',credentials:'omit'});
+    if (!response.ok) return;
+    const summary=await response.json();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(summary.checked) ||
+        !Array.isArray(summary.issues) || !summary.issues.length ||
+        !summary.issues.every(issue=>typeof issue.title==='string' && ['Open','Closed'].includes(issue.status))) return;
+    const week=seasonTimeline[0];
+    week.checked=date(summary.checked);
+    week.tasks=summary.issues.map(issue=>[issue.title,issue.status]);
+    if (section==='Overview') render();
+  } catch { /* Keep the dated snapshot available if the public feed is unavailable. */ }
+}
 function timelinePanel() {
   const groups = seasonTimeline.map(item => {
     const title = esc(item.title);
@@ -392,5 +407,6 @@ function sectionFromHash() {
 window.addEventListener('hashchange',()=>navigate(sectionFromHash()));
 navigate(sectionFromHash());
 initializeGitHubSession();
+loadPublicSummary();
 </script>
 </html>
