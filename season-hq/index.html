@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-W7aprf5tPXdT9klpGlJAQ7lxzFXVHZi09nSv+ED4rpQ='; style-src 'unsafe-inline'; img-src data:; connect-src https://api.github.com https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-UUnKvi8X9ZYnFI5GB/QcIi310I46Z6vnovXEh11lPWM='; style-src 'unsafe-inline'; img-src data:; connect-src https://api.github.com https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'">
 <title>Season HQ · Team Ingenuity</title>
 <style>
 :root {
@@ -249,7 +249,9 @@ const seasonTimeline = [
     ['Portfolio outline and documentation','Open'],
     ['Review judging criteria and assign speaking topics','Open'],
     ['Hold full-team progress review','Open']
-  ]},
+  ]}
+];
+const qualifiers = [
   {date:'Dec 6, 2026', title:'Washington DC Qualifier II', status:'Team listed',
     url:'https://ftc-events.firstinspires.org/2026/USCHSWAQ2'},
   {date:'Jan 17, 2027', title:'Virginia Beach Qualifier', status:'Team listed',
@@ -273,7 +275,7 @@ async function loadPublicSummary() {
   } catch { /* Keep the dated snapshot available if the public feed is unavailable. */ }
 }
 function timelinePanel() {
-  const groups = seasonTimeline.map(item => {
+  const renderGroup = item => {
     const title = esc(item.title);
     const heading = item.url ? '<a href="'+esc(item.url)+'">'+title+' ↗</a>' : title;
     const tasks = item.tasks ? '<ul class="weekly-list">'+item.tasks.map(([name,status])=>
@@ -282,8 +284,10 @@ function timelinePanel() {
     const badge = item.status ? '<span class="badge'+(item.status.startsWith('Tentative')?' tentative':'')+'">'+esc(item.status)+'</span>' : '';
     return '<div class="timeline-group"><div class="row"><div><span class="timeline-date">'+esc(item.date)+
       '</span><h3>'+heading+'</h3></div>'+badge+'</div>'+tasks+'</div>';
-  });
-  return '<section class="panel weekly-panel"><h2>Season timeline</h2>'+groups.join('')+'</section>';
+  };
+  return '<section class="panel weekly-panel"><h2>Public season timeline</h2>'+
+    seasonTimeline.map(renderGroup).join('')+
+    '<section class="timeline-group"><h3>Qualifiers</h3>'+qualifiers.map(renderGroup).join('')+'</section></section>';
 }
 function overview(){
   const goals = records.filter(r=>r.category==='Goals');
